@@ -26,3 +26,10 @@
 *.exe
 *.out
 *.app
+
+# VS rubbish.
+Debug/
+Release/
+tmx2gba.opensdf
+tmx2gba.sdf
+tmx2gba.v12.suo
