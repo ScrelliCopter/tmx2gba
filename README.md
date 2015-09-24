@@ -1,5 +1,15 @@
 # tmx2gba #
-tmx2gba is a simple command line utility that converts Tiled .tmx maps to GBA-compatible charmaps.
+tmx2gba is a simple command line utility that converts Tiled (http://www.mapeditor.org/) .tmx maps to Game Boy Advance compatible charmaps.
+Originally developed for my own personal use, I've thrown it up on glorious Github in case this is of use to anyone else.
+
+If you find a bug, please open an issue.
+
+Enjoy!
+
+### Features ###
+* Exports to raw binary that can be easily memcpy'd into VRAM.
+* Preserves tile flipping.
+* Rudimentry collision layer support.
 
 ### How do I use it? ###
 ```
@@ -9,16 +19,23 @@ tmx2gba [-h] [-r offset] [-lc name] [-p 0-15] <-i inpath> <-o outpath>
 Command     | Required | Notes
 ------------|----------|-------------------------------------------------------------
 -h          | N/A      | Display help & command info.
--l <name>   | No       | Name of layer to use (default first layer in TMX).
--c <name>   | No       | Output a separate 8bit collision map of the specified layer.
--r <offset> | No       | Offset tile indices (default 0).
--p <0-15>   | No       | Select which palette to use for 4-bit tilesets.
--i <path>   | *Yes*    | Path to input TMX file.
--o <path>   | *Yes*    | Path to output files.
+-l (name)   | No       | Name of layer to use (default first layer in TMX).
+-c (name)   | No       | Output a separate 8bit collision map of the specified layer.
+-r (offset) | No       | Offset tile indices (default 0).
+-p (0-15)   | No       | Select which palette to use for 4-bit tilesets.
+-i (path)   | *Yes*    | Path to input TMX file.
+-o (path)   | *Yes*    | Path to output files.
 
 ### Todo list ###
 * Add support for multi-SBB prepared charmaps.
-* Test on Linux.
+* Test on & write Makefile for Linux.
+* Export to C/ASM with width/height info.
+* Check if this works for NDS as well.
+* Figure out how to implement multi palette support.
+* Implement some kind of grit-style parameters file for easy intergration into buildscripts.
+* Revamp command line arguments.
+* Compression support.
+* Refactor & Fix bugs.
 
 ### License ###
 tmx2gba is licensed under the zlib license.
