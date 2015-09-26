@@ -30,6 +30,11 @@
 # VS rubbish.
 Debug/
 Release/
-tmx2gba.opensdf
-tmx2gba.sdf
-tmx2gba.v12.suo
+*.opensdf
+*.sdf
+*.v12.suo
+*.vcxproj.user
+
+# Some files I used for testing.
+*.tmx
+*.raw

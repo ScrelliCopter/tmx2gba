@@ -278,7 +278,7 @@ int main ( int argc, char** argv )
 	vucCharDat.reserve ( info.width * info.height );
 	for ( size_t i = 0; i < size_t(info.width * info.height * 2); ++i )
 	{
-		uint16_t usTile = std::max<int> ( (*pRead++) + iOffset, 0 );
+		uint16_t usTile = std::max<uint16_t> ( (*pRead++) + (uint16_t)iOffset, 0 );
 
 		bool bFlipH = ( 0x8000 & *pRead ) ? true : false;
 		bool bFlipV = ( 0x4000 & *pRead++ ) ? true : false;
