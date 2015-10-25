@@ -68,6 +68,8 @@
   <ItemGroup>
     <ClCompile Include="src\base64.cpp" />
     <ClCompile Include="src\tmx2gba.cpp" />
+    <ClCompile Include="src\tmxlayer.cpp" />
+    <ClCompile Include="src\tmxreader.cpp" />
     <ClCompile Include="src\XGetopt.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -78,6 +80,8 @@
     <ClInclude Include="inc\rapidxml\rapidxml_print.hpp" />
     <ClInclude Include="inc\rapidxml\rapidxml_utils.hpp" />
     <ClInclude Include="inc\XGetopt.h" />
+    <ClInclude Include="src\tmxlayer.h" />
+    <ClInclude Include="src\tmxreader.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

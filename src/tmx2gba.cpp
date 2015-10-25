@@ -20,17 +20,16 @@
 
 */
 
+#include "tmxreader.h"
+#include "tmxlayer.h"
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
-#include <sstream>
 #include <cstdint>
 #include <algorithm>
-#include <rapidxml/rapidxml.hpp>
-#include <base64.h>
-#include <miniz.h>
 #include <XGetopt.h>
+
 
 static const std::string g_strUsage = "Usage: tmx2gba [-h] [-r offset] [-lc name] [-p 0-15] <-i inpath> <-o outpath>\nRun 'tmx2gba -h' to view all available options.";
 static const std::string g_strFullHelp = R"(Usage: tmx2gba [-hr] [-p index] <-i inpath> <-o outpath>
@@ -43,55 +42,19 @@ static const std::string g_strFullHelp = R"(Usage: tmx2gba [-hr] [-p index] <-i 
 -i <path> --- Path to input TMX file.
 -o <path> --- Path to output files.)";
 
-struct STilemapInfo
+
+struct SParams
 {
-	uint32_t width;
-	uint32_t height;
+	std::string inPath, outPath;
+	std::string layer, collisionlay, paletteLay;
+	int offset = 0;
+	int palette = 0;
 };
 
-
-bool DecodeMapData (
-		const std::string& a_strEncData,
-		int a_iWidth, int a_iHeight,
-		std::vector<uint8_t>* a_pvucOut
-	)
+bool ParseArgs ( int argc, char** argv, SParams* params )
 {
-	if ( a_pvucOut == nullptr )
-	{
-		return false;
-	}
-
-	// Decode base64 string.
-	unsigned int cutTheCrap = a_strEncData.find_first_not_of ( " \t\n\r" );
-	std::string strDec = base64_decode ( a_strEncData.substr ( cutTheCrap ) );
-	a_pvucOut->clear ();
-	a_pvucOut->resize ( a_iWidth * a_iHeight * 4 );
-	mz_ulong uiDstSize = a_pvucOut->size ();
-
-	// Decompress compressed data.
-	int iRes = uncompress (
-			a_pvucOut->data (), &uiDstSize,
-			(const uint8_t*)strDec.data (), strDec.size ()
-		);
-	strDec.clear ();
-	if ( iRes < 0 )
-	{
-		return false;
-	}
-
-	return true;
-}
-
-int main ( int argc, char** argv )
-{
-	// Parse cmd line args.
-	std::string strInPath, strOutPath;
-	std::string strLayer, strCollisionlay;
-	int iOffset = 0;
-	int iPalette = 0;
-
 	char cOption;
-	while ( ( cOption = getopt ( argc, argv, "hr:l:c:p:i:o:" ) ) > 0 )
+	while ( ( cOption = getopt ( argc, argv, "hr:l:c:p:y:i:o:" ) ) > 0 )
 	{
 		switch ( cOption )
 		{
@@ -100,27 +63,31 @@ int main ( int argc, char** argv )
 			return 0;
 
 		case ( 'l' ):
-			strLayer = optarg;
+			params->layer = optarg;
 			break;
 
 		case ( 'c' ):
-			strCollisionlay = optarg;
+			params->collisionlay = optarg;
+			break;
+
+		case ( 'y' ):
+			params->paletteLay = optarg;
 			break;
 
 		case ( 'r' ):
-			iOffset = std::stoi ( optarg );
+			params->offset = std::stoi ( optarg );
 			break;
 
 		case ( 'p' ):
-			iPalette = std::stoi ( optarg );
+			params->palette = std::stoi ( optarg );
 			break;
 
 		case ( 'i' ):
-			strInPath = optarg;
+			params->inPath = optarg;
 			break;
 
 		case ( 'o' ):
-			strOutPath = optarg;
+			params->outPath = optarg;
 			break;
 
 		default:
@@ -129,156 +96,71 @@ int main ( int argc, char** argv )
 	}
 
 	// Check my paranoia.
-	if ( strInPath.empty () )
+	if ( params->inPath.empty () )
 	{
 		std::cerr << "No input file specified." << std::endl;
 		std::cout << g_strUsage << std::endl;
-		return -1;
+		return false;
 	}
-	if ( strOutPath.empty () )
+	if ( params->outPath.empty () )
 	{
 		std::cerr << "No output file specified." << std::endl;
 		std::cout << g_strUsage << std::endl;
-		return -1;
+		return false;
 	}
-	if ( iPalette < 0 || iPalette > 15 )
+	if ( params->palette < 0 || params->palette > 15 )
 	{
 		std::cerr << "Invalid palette index." << std::endl;
 		std::cout << g_strUsage << std::endl;
+		return false;
+	}
+
+	return true;
+}
+
+
+int main ( int argc, char** argv )
+{
+	SParams params;
+	if ( !ParseArgs ( argc, argv, &params ) )
+	{
 		return -1;
 	}
 
 	// Open & read input file.
-	std::ifstream fin ( strInPath );
+	CTmxReader tmx;
+	std::ifstream fin ( params.inPath );
 	if ( !fin.is_open () )
 	{
 		std::cerr << "Failed to open input file." << std::endl;
 		return -1;
 	}
-	std::stringstream buf;
-	buf << fin.rdbuf ();
-	fin.close ();
-	std::string strXml = buf.str ();
-	buf.clear ();
+	tmx.Open ( fin );
 
-	STilemapInfo info;
-	memset ( &info, 0, sizeof(STilemapInfo) );
-	std::string strEncData, strEncCollisionDat;
-
-	// Parse document.
-	rapidxml::xml_document<> xDoc;
-	xDoc.parse<0> ( (char*)strXml.c_str () );
-
-	// Get map node.
-	auto xMap = xDoc.first_node ( "map" );
-	if ( xMap != nullptr )
+	// Get layers.
+	if ( tmx.GetLayerCount () == 0 )
 	{
-		// Read map attribs.
-		rapidxml::xml_attribute<>* xAttrib = nullptr;
-		if ( ( xAttrib = xMap->first_attribute ( "width" ) ) != nullptr )
-		{
-			info.width = std::stoi ( xAttrib->value () );
-		}
-		if ( ( xAttrib = xMap->first_attribute ( "height" ) ) != nullptr )
-		{
-			info.height = std::stoi ( xAttrib->value () );
-		}
-
-		// Get layer node.
-		rapidxml::xml_node<>* xLayer = nullptr;
-		if ( strLayer.empty () )
-		{
-			xLayer = xMap->first_node ( "layer" );
-		}
-		else
-		{
-			// Find specified layer.
-			for ( auto xNode = xMap->first_node (); xNode != nullptr; xNode = xNode->next_sibling () )
-			{
-				// We only want layers.
-				if ( strcmp ( xNode->name (), "layer" ) == 0 )
-				{
-					// Use this layer if it matches our specified name.
-					auto xName = xNode->first_attribute ( "name" );
-					if ( xName != nullptr )
-					{
-						if ( strcmp ( xName->value (), strLayer.c_str () ) == 0 )
-						{
-							xLayer = xNode;
-							break;
-						}
-					}
-				}
-			}
-		}
-
-		// Find collision layer.
-		rapidxml::xml_node<>* xCollisionLay = nullptr;
-		if ( !strCollisionlay.empty () )
-		{
-			for ( auto xNode = xMap->first_node (); xNode != nullptr; xNode = xNode->next_sibling () )
-			{
-				if ( strcmp ( xNode->name (), "layer" ) == 0 )
-				{
-					// Use this layer if it matches our specified name.
-					auto xName = xNode->first_attribute ( "name" );
-					if ( xName != nullptr )
-					{
-						if ( strcmp ( xName->value (), strCollisionlay.c_str () ) == 0 )
-						{
-							xCollisionLay = xNode;
-							break;
-						}
-					}
-				}
-			}
-		}
-
-		// Read data from layer node.
-		if ( xLayer != nullptr )
-		{
-			auto xData = xLayer->first_node ( "data" );
-			if ( xData != nullptr )
-			{
-				// Get encoded data.
-				strEncData = xData->value ();
-			}
-		}
-
-		// Read data from collision layer.
-		if ( xCollisionLay != nullptr )
-		{
-			auto xData = xCollisionLay->first_node ( "data" );
-			if ( xData != nullptr )
-			{
-				// Get encoded data.
-				strEncCollisionDat = xData->value ();
-			}
-		}
-	}
-
-	// Check what we (don't) have.
-	if ( info.width == 0 || info.height == 0 || strEncData.empty () )
-	{
-		std::cerr << "Parse error.";
+		std::cerr << "No layers found." << std::endl; 
 		return -1;
 	}
+	const CTmxLayer* pLayerGfx = params.inPath.empty () ? tmx.GetLayer ( 0 ) : tmx.GetLayer ( params.layer );
+	const CTmxLayer* pLayerCls = params.inPath.empty () ? nullptr : tmx.GetLayer ( params.collisionlay );
+	const CTmxLayer* pLayerPal = params.inPath.empty () ? nullptr : tmx.GetLayer ( params.paletteLay );
 
-	// Decode and decompress layer data.
-	std::vector<uint8_t> vucLayerDat;
-	if ( !DecodeMapData ( strEncData, info.width, info.height, &vucLayerDat ) )
+	if ( pLayerGfx == nullptr )
 	{
-		std::cerr << "Decompression error.";
+		std::cerr << "Input layer not found." << std::endl;
 		return -1;
 	}
 
 	// Convert to GBA-friendly charmap data.
-	uint16_t* pRead = (uint16_t*)vucLayerDat.data ();
+	const uint16_t* pRead		= (const uint16_t*)pLayerGfx->GetData ();
+	//const uint16_t* pPalRead	= (const uint16_t*)pLayerPal->GetData ();
 	std::vector<uint16_t> vucCharDat;
-	vucCharDat.reserve ( info.width * info.height );
-	for ( size_t i = 0; i < size_t(info.width * info.height * 2); ++i )
+	vucCharDat.reserve ( pLayerGfx->GetWidth () * pLayerGfx->GetHeight () );
+	for ( size_t i = 0; i < size_t(pLayerGfx->GetWidth () * pLayerGfx->GetHeight () * 2); ++i )
 	{
-		uint16_t usTile = std::max<uint16_t> ( (*pRead++) + (uint16_t)iOffset, 0 );
+		uint16_t usTile = std::max<uint16_t> ( (*pRead++) + (uint16_t)params.offset, 0 );
 
 		bool bFlipH = ( 0x8000 & *pRead ) ? true : false;
 		bool bFlipV = ( 0x4000 & *pRead++ ) ? true : false;
@@ -286,14 +168,13 @@ int main ( int argc, char** argv )
 		uint8_t ucFlags = 0x0;
 		ucFlags |= ( bFlipH ) ? 0x4 : 0x0;
 		ucFlags |= ( bFlipV ) ? 0x8 : 0x0;
-		ucFlags |= iPalette << 4;
+		ucFlags |= params.palette << 4;
 
 		vucCharDat.push_back ( usTile | ucFlags << 8 );
 	}
-	vucLayerDat.clear ();
 
 	// Save out charmap.
-	std::ofstream fout ( strOutPath, std::ios::binary );
+	std::ofstream fout ( params.outPath, std::ios::binary );
 	if ( !fout.is_open () )
 	{
 		std::cerr << "Failed to create output file.";
@@ -302,37 +183,30 @@ int main ( int argc, char** argv )
 	fout.write ( (const char*)vucCharDat.data (), vucCharDat.size () );
 	fout.close ();
 
-	// Decode & convert collision map.
-	std::vector<uint8_t> vucCollisionDat;
-	if ( !strEncCollisionDat.empty () )
+	// Convert collision map & save it out.
+	if ( pLayerCls != nullptr )
 	{
-		std::vector<uint8_t> vucLayerDat;
-		if ( DecodeMapData ( strEncCollisionDat, info.width, info.height, &vucLayerDat ) )
-		{
-			vucCollisionDat.reserve ( info.width * info.height );
-			uint8_t* pRead = vucLayerDat.data ();
-			for ( size_t i = 0; i < info.width * info.height; ++i )
-			{
-				uint8_t ucTile = *pRead;
-				pRead += 4;
-				vucCollisionDat.push_back ( ucTile );
-			}
-		}
-	}
+		std::vector<uint8_t> vucCollisionDat;
+		vucCollisionDat.reserve ( pLayerCls->GetWidth () * pLayerCls->GetHeight () );
 
-	// Save it out or something like that.
-	if ( !vucCollisionDat.empty () )
-	{
+		const uint8_t* pRead = (const uint8_t*)pLayerCls->GetData ();
+		for ( size_t i = 0; i < pLayerCls->GetWidth () * pLayerCls->GetHeight (); ++i )
+		{
+			uint8_t ucTile = *pRead;
+			pRead += 4;
+			vucCollisionDat.push_back ( ucTile );
+		}
+
 		// Try to nicely append "_collision" to the output name.
 		std::string strPath;
-		size_t extPos = strOutPath.find_last_of ( '.' );
+		size_t extPos = params.outPath.find_last_of ( '.' );
 		if ( extPos != std::string::npos )
 		{
-			strPath = strOutPath.insert ( extPos, "_collision" );
+			strPath = params.outPath.insert ( extPos, "_collision" );
 		}
 		else
 		{
-			strPath = strOutPath + "_collision";
+			strPath = params.outPath + "_collision";
 		}
 
 		// Save it out.
