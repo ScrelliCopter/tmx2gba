@@ -144,9 +144,9 @@ int main ( int argc, char** argv )
 		std::cerr << "No layers found." << std::endl; 
 		return -1;
 	}
-	const CTmxLayer* pLayerGfx = params.inPath.empty () ? tmx.GetLayer ( 0 ) : tmx.GetLayer ( params.layer );
-	const CTmxLayer* pLayerCls = params.inPath.empty () ? nullptr : tmx.GetLayer ( params.collisionlay );
-	const CTmxLayer* pLayerPal = params.inPath.empty () ? nullptr : tmx.GetLayer ( params.paletteLay );
+	const CTmxLayer* pLayerGfx = params.layer.empty () ? tmx.GetLayer ( 0 ) : tmx.GetLayer ( params.layer );
+	const CTmxLayer* pLayerCls = params.collisionlay.empty () ? nullptr : tmx.GetLayer ( params.collisionlay );
+	const CTmxLayer* pLayerPal = params.paletteLay.empty () ? nullptr : tmx.GetLayer ( params.paletteLay );
 
 	if ( pLayerGfx == nullptr )
 	{
