@@ -163,7 +163,7 @@ int main ( int argc, char** argv )
 	{
 		uint32_t uiRead = (*pRead++);
 
-		uint8_t ucTile	= (uint8_t)std::max<uint32_t> ( 0, tmx.LidFromGid ( uiRead & ~FLIP_MASK ) + params.offset );
+		uint16_t usTile	= (uint16_t)std::max<int32_t> ( 0, tmx.LidFromGid ( uiRead & ~FLIP_MASK ) + params.offset );
 		uint8_t ucFlags	= 0x0;
 
 		// Get flipped!
@@ -174,15 +174,15 @@ int main ( int argc, char** argv )
 		uint32_t uiIndex = 0;
 		if ( pPalRead != nullptr )
 		{
-			uiIndex = tmx.LidFromGid ( *pPalRead++ & ~FLIP_MASK );
+			uiIndex = tmx.LidFromGid ( (*pPalRead++) & ~FLIP_MASK );
 		}
 		if ( uiIndex == 0 )
 		{
-			uiIndex = ( params.palette << 4 ) + 1;
+			uiIndex = params.palette + 1;
 		}
-		ucFlags |= (uint8_t)(uiIndex - 1);
+		ucFlags |= (uint8_t)(uiIndex - 1) << 4;
 
-		vucCharDat.push_back ( (uint16_t)ucTile | (uint16_t)ucFlags << 8 );
+		vucCharDat.push_back ( usTile | ( uint16_t(ucFlags) << 8 ) );
 	}
 
 	// Save out charmap.
