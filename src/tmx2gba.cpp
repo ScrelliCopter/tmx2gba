@@ -31,11 +31,12 @@
 #include <XGetopt.h>
 
 
-static const std::string g_strUsage = "Usage: tmx2gba [-h] [-r offset] [-lc name] [-p 0-15] <-i inpath> <-o outpath>\nRun 'tmx2gba -h' to view all available options.";
-static const std::string g_strFullHelp = R"(Usage: tmx2gba [-hr] [-p index] <-i inpath> <-o outpath>
+static const std::string g_strUsage = "Usage: tmx2gba [-h] [-r offset] [-lyc name] [-p 0-15] <-i inpath> <-o outpath>\nRun 'tmx2gba -h' to view all available options.";
+static const std::string g_strFullHelp = R"(Usage: tmx2gba [-h] [-r offset] [-lyc name] [-p 0-15] <-i inpath> <-o outpath>
 
 -h ---------- Display this help & command info.
 -l <name> --- Name of layer to use (default first layer in TMX).
+-y <name> --- Layer for palette mappings.
 -c <name> --- Output a separate 8bit collision map of the specified layer.
 -r <offset> - Offset tile indices (default 0).
 -p <0-15> --- Select which palette to use for 4-bit tilesets.
@@ -154,23 +155,34 @@ int main ( int argc, char** argv )
 	}
 
 	// Convert to GBA-friendly charmap data.
-	const uint16_t* pRead		= (const uint16_t*)pLayerGfx->GetData ();
-	//const uint16_t* pPalRead	= (const uint16_t*)pLayerPal->GetData ();
+	const uint32_t* pRead		= pLayerGfx->GetData ();
+	const uint32_t* pPalRead	= pLayerPal == nullptr ? nullptr : pLayerPal->GetData ();
 	std::vector<uint16_t> vucCharDat;
 	vucCharDat.reserve ( pLayerGfx->GetWidth () * pLayerGfx->GetHeight () );
 	for ( size_t i = 0; i < size_t(pLayerGfx->GetWidth () * pLayerGfx->GetHeight () * 2); ++i )
 	{
-		uint16_t usTile = std::max<uint16_t> ( (*pRead++) + (uint16_t)params.offset, 0 );
+		uint32_t uiRead = (*pRead++);
 
-		bool bFlipH = ( 0x8000 & *pRead ) ? true : false;
-		bool bFlipV = ( 0x4000 & *pRead++ ) ? true : false;
+		uint8_t ucTile	= (uint8_t)std::max<uint32_t> ( 0, tmx.LidFromGid ( uiRead & ~FLIP_MASK ) + params.offset );
+		uint8_t ucFlags	= 0x0;
 
-		uint8_t ucFlags = 0x0;
-		ucFlags |= ( bFlipH ) ? 0x4 : 0x0;
-		ucFlags |= ( bFlipV ) ? 0x8 : 0x0;
-		ucFlags |= params.palette << 4;
+		// Get flipped!
+		ucFlags |= ( uiRead & FLIP_HORZ ) ? 0x4 : 0x0;
+		ucFlags |= ( uiRead & FLIP_VERT ) ? 0x8 : 0x0;
 
-		vucCharDat.push_back ( usTile | ucFlags << 8 );
+		// Determine palette ID.
+		uint32_t uiIndex = 0;
+		if ( pPalRead != nullptr )
+		{
+			uiIndex = tmx.LidFromGid ( *pPalRead++ & ~FLIP_MASK );
+		}
+		if ( uiIndex == 0 )
+		{
+			uiIndex = ( params.palette << 4 ) + 1;
+		}
+		ucFlags |= (uint8_t)(uiIndex - 1);
+
+		vucCharDat.push_back ( (uint16_t)ucTile | (uint16_t)ucFlags << 8 );
 	}
 
 	// Save out charmap.
@@ -189,11 +201,10 @@ int main ( int argc, char** argv )
 		std::vector<uint8_t> vucCollisionDat;
 		vucCollisionDat.reserve ( pLayerCls->GetWidth () * pLayerCls->GetHeight () );
 
-		const uint8_t* pRead = (const uint8_t*)pLayerCls->GetData ();
+		const uint32_t* pRead = pLayerCls->GetData ();
 		for ( size_t i = 0; i < pLayerCls->GetWidth () * pLayerCls->GetHeight (); ++i )
 		{
-			uint8_t ucTile = *pRead;
-			pRead += 4;
+			uint8_t ucTile = (uint8_t)tmx.LidFromGid ( (*pRead++) & ~FLIP_MASK );
 			vucCollisionDat.push_back ( ucTile );
 		}
 

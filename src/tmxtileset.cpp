@@ -1,4 +1,4 @@
-/* tmxlayer.cpp
+/* tmxtileset.cpp
 
   Copyright (C) 2015 Nicholas Curtis
 
@@ -20,49 +20,41 @@
 
 */
 
-#include "tmxlayer.h"
+#include "tmxtileset.h"
 
-
-CTmxLayer::CTmxLayer () :
-	m_iWidth ( 0 ),
-	m_iHeight ( 0 ),
-	m_strName ( "" ),
-	m_pTileDat ( nullptr )
+CTmxTileset::CTmxTileset () :
+	m_strName		( "" ),
+	m_strSource		( "" ),
+	m_uiFirstGid	( 0 )
 {
 
 }
 
-CTmxLayer::CTmxLayer ( int a_iWidth, int a_iHeight, const char* a_szName, uint32_t* a_pTileDat ) :
-	m_iWidth ( a_iWidth ),
-	m_iHeight ( a_iHeight ),
-	m_strName ( a_szName ),
-	m_pTileDat ( a_pTileDat )
+CTmxTileset::CTmxTileset ( const char* a_szName, const char* a_szSource, uint32_t a_uiFirstGid ) :
+	m_strName		( a_szName ),
+	m_strSource		( a_szSource ),
+	m_uiFirstGid	( a_uiFirstGid )
 {
 
 }
 
-CTmxLayer::~CTmxLayer ()
+CTmxTileset::~CTmxTileset ()
 {
-	delete[] m_pTileDat;
+
 }
 
 
-const std::string& CTmxLayer::GetName () const
+const std::string& CTmxTileset::GetName () const
 {
 	return m_strName;
 }
 
-int CTmxLayer::GetWidth () const
+const std::string& CTmxTileset::GetSource () const
 {
-	return m_iWidth;
+	return m_strSource;
 }
 
-int CTmxLayer::GetHeight () const
+uint32_t CTmxTileset::GetFirstGid () const
 {
-	return m_iHeight;
-}
-
-const uint32_t* CTmxLayer::GetData () const
-{
-	return m_pTileDat;
+	return m_uiFirstGid;
 }

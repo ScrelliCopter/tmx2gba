@@ -21,9 +21,11 @@
 */
 
 #include "tmxreader.h"
+#include "tmxtileset.h"
 #include "tmxlayer.h"
 #include <cstdint>
 #include <sstream>
+#include <algorithm>
 #include <rapidxml/rapidxml.hpp>
 #include <base64.h>
 #include <miniz.h>
@@ -36,6 +38,13 @@ CTmxReader::CTmxReader ()
 
 CTmxReader::~CTmxReader ()
 {
+	// Delete old tilesets.
+	for ( auto pTileset : m_vpTileset )
+	{
+		delete pTileset;
+	}
+	m_vpTileset.clear ();
+
 	// Delete old layers.
 	for ( auto pLay : m_vpLayers )
 	{
@@ -45,7 +54,7 @@ CTmxReader::~CTmxReader ()
 }
 
 
-bool DecodeMap ( uint8_t* a_szOut, size_t a_outSize, const std::string& a_strIn )
+bool CTmxReader::DecodeMap ( uint32_t* a_pOut, size_t a_outSize, const std::string& a_strIn )
 {
 	// Decode base64 string.
 	size_t cutTheCrap = a_strIn.find_first_not_of ( " \t\n\r" );
@@ -54,8 +63,8 @@ bool DecodeMap ( uint8_t* a_szOut, size_t a_outSize, const std::string& a_strIn 
 	// Decompress compressed data.
 	mz_ulong uiDstSize = a_outSize;
 	int iRes = uncompress (
-			a_szOut, &uiDstSize,
-			(const uint8_t*)strDec.data (), strDec.size ()
+			(unsigned char*)a_pOut, &uiDstSize,
+			(const unsigned char*)strDec.data (), strDec.size ()
 		);
 	strDec.clear ();
 	if ( iRes < 0 )
@@ -66,14 +75,99 @@ bool DecodeMap ( uint8_t* a_szOut, size_t a_outSize, const std::string& a_strIn 
 	return true;
 }
 
+void CTmxReader::ReadTileset ( rapidxml::xml_node<>* a_xNode )
+{
+	rapidxml::xml_attribute<>* xAttrib;
+
+	const char*	szName		= "";
+	const char*	szSource	= "";
+	uint32_t	uiFirstGid	= 0;
+
+	// Read name.
+	xAttrib = a_xNode->first_attribute ( "name" );
+	if ( xAttrib != nullptr )
+	{
+		szName = xAttrib->value ();
+	}
+
+	// Read source.
+	xAttrib = a_xNode->first_attribute ( "source" );
+	if ( xAttrib != nullptr )
+	{
+		szSource = xAttrib->value ();
+	}
+
+	// Read first global ID.
+	xAttrib = a_xNode->first_attribute ( "firstgid" );
+	if ( xAttrib != nullptr )
+	{
+		uiFirstGid = std::stoul ( xAttrib->value () );
+	}
+
+	m_vpTileset.push_back ( new CTmxTileset ( szName, szSource, uiFirstGid ) );
+}
+
+void CTmxReader::ReadLayer ( rapidxml::xml_node<>* a_xNode )
+{
+	rapidxml::xml_attribute<>* xAttrib;
+	const char*	szName		= "";
+	int			iWidth		= 0;
+	int			iHeight		= 0;
+	uint32_t*	pTileDat	= nullptr;
+
+	// Read name.
+	xAttrib = a_xNode->first_attribute ( "name" );
+	if ( xAttrib != nullptr )
+	{
+		szName = xAttrib->value ();
+	}
+
+	// Read width.
+	xAttrib = a_xNode->first_attribute ( "width" );
+	if ( xAttrib != nullptr )
+	{
+		iWidth = std::stoi ( xAttrib->value () );
+	}
+
+	// Read height.
+	xAttrib = a_xNode->first_attribute ( "height" );
+	if ( xAttrib != nullptr )
+	{
+		iHeight = std::stoi ( xAttrib->value () );
+	}
+
+	// Read tile data.
+	auto xData = a_xNode->first_node ( "data" );
+	if ( xData != nullptr )
+	{
+		// TODO: don't assume base64 & zlib.
+		pTileDat = new uint32_t[iWidth * iHeight];
+		if ( !DecodeMap ( pTileDat, iWidth * iHeight * sizeof(uint32_t), std::string ( xData->value () ) ) )
+		{
+			pTileDat = nullptr;
+		}
+	}
+
+	m_vpLayers.push_back ( new CTmxLayer ( iWidth, iHeight, szName, pTileDat ) );
+}
+
 void CTmxReader::Open ( std::istream& a_in )
 {
+	// Delete old tilesets.
+	for ( auto pTileset : m_vpTileset )
+	{
+		delete pTileset;
+	}
+	m_vpTileset.clear ();
+
 	// Delete old layers.
 	for ( auto pLay : m_vpLayers )
 	{
 		delete pLay;
 	}
 	m_vpLayers.clear ();
+
+	m_vuiGidTable.clear ();
 
 	// Read string into a buffer.
 	std::stringstream buf;
@@ -103,56 +197,27 @@ void CTmxReader::Open ( std::istream& a_in )
 		m_iHeight = std::stoi ( xAttrib->value () );
 	}
 
-	// Read layer nodes.
+	// Read nodes.
 	for ( auto xNode = xMap->first_node (); xNode != nullptr; xNode = xNode->next_sibling () )
 	{
-		// Make sure it's a layer.
-		if ( strcmp ( xNode->name (), "layer" ) != 0 )
+		// Read layer nodes.
+		if ( strcmp ( xNode->name (), "layer" ) == 0 )
 		{
-			continue;
+			ReadLayer ( xNode );
 		}
-
-		rapidxml::xml_attribute<>* xAttrib;
-		const char*	szName		= nullptr;
-		int			iWidth		= 0;
-		int			iHeight		= 0;
-		uint8_t*	pTileDat	= nullptr;
-
-		// Read name.
-		xAttrib = xNode->first_attribute ( "name" );
-		if ( xAttrib != nullptr )
+		else
+		if ( strcmp ( xNode->name (), "tileset" ) == 0 )
 		{
-			szName = xAttrib->value ();
+			ReadTileset ( xNode );
 		}
-
-		// Read width.
-		xAttrib = xNode->first_attribute ( "width" );
-		if ( xAttrib != nullptr )
-		{
-			iWidth = std::stoi ( xAttrib->value () );
-		}
-
-		// Read height.
-		xAttrib = xNode->first_attribute ( "height" );
-		if ( xAttrib != nullptr )
-		{
-			iHeight = std::stoi ( xAttrib->value () );
-		}
-
-		// Read tile data.
-		auto xData = xNode->first_node ( "data" );
-		if ( xData != nullptr )
-		{
-			// TODO: don't assume base64 & zlib.
-			pTileDat = new uint8_t[iWidth * iHeight * 4];
-			if ( !DecodeMap ( pTileDat, iWidth * iHeight * 4, std::string ( xData->value () ) ) )
-			{
-				pTileDat = nullptr;
-			}
-		}
-
-		m_vpLayers.push_back ( new CTmxLayer ( iWidth, iHeight, szName, pTileDat ) );
 	}
+
+	// Generate global id table.
+	for ( auto pTileset : m_vpTileset )
+	{
+		m_vuiGidTable.push_back ( pTileset->GetFirstGid () );
+	}
+	std::sort ( m_vuiGidTable.rbegin (), m_vuiGidTable.rend () );
 }
 
 
@@ -188,4 +253,18 @@ const CTmxLayer* CTmxReader::GetLayer ( std::string a_strName ) const
 int CTmxReader::GetLayerCount () const
 {
 	return m_vpLayers.size ();
+}
+
+
+uint32_t CTmxReader::LidFromGid ( uint32_t a_uiGid )
+{
+	for ( uint32_t uiFirst : m_vuiGidTable )
+	{
+		if ( uiFirst <= a_uiGid )
+		{
+			return a_uiGid - ( uiFirst - 1 );
+		}
+	}
+
+	return a_uiGid;
 }
