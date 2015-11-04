@@ -9,17 +9,19 @@ Enjoy!
 ### Features ###
 * Exports to raw binary that can be easily memcpy'd into VRAM.
 * Preserves tile flipping.
-* Rudimentry collision layer support.
+* Supports per-tile palette specification.
+* Custom collision layer support.
 
 ### How do I use it? ###
 ```
-tmx2gba [-h] [-r offset] [-lc name] [-p 0-15] <-i inpath> <-o outpath>
+tmx2gba [-h] [-r offset] [-lyc name] [-p 0-15] <-i inpath> <-o outpath>
 ```
 
 Command     | Required | Notes
 ------------|----------|-------------------------------------------------------------
 -h          | N/A      | Display help & command info.
 -l (name)   | No       | Name of layer to use (default first layer in TMX).
+-y (name)   | No       | Layer for palette mappings.
 -c (name)   | No       | Output a separate 8bit collision map of the specified layer.
 -r (offset) | No       | Offset tile indices (default 0).
 -p (0-15)   | No       | Select which palette to use for 4-bit tilesets.
@@ -31,8 +33,7 @@ Command     | Required | Notes
 * Test on & write Makefile for Linux.
 * Export to C/ASM with width/height info.
 * Check if this works for NDS as well.
-* Figure out how to implement multi palette support.
-* Implement some kind of grit-style parameters file for easy intergration into buildscripts.
+* Implement some kind of grit-style parameters file for easy integration into buildscripts.
 * Revamp command line arguments.
 * Compression support.
 * Refactor & Fix bugs.
