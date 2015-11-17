@@ -144,6 +144,7 @@ void CTmxReader::ReadLayer ( rapidxml::xml_node<>* a_xNode )
 		pTileDat = new uint32_t[iWidth * iHeight];
 		if ( !DecodeMap ( pTileDat, iWidth * iHeight * sizeof(uint32_t), std::string ( xData->value () ) ) )
 		{
+			delete[] pTileDat;
 			pTileDat = nullptr;
 		}
 	}

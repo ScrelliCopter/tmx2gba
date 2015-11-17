@@ -55,7 +55,7 @@ struct SParams
 bool ParseArgs ( int argc, char** argv, SParams* params )
 {
 	char cOption;
-	while ( ( cOption = getopt ( argc, argv, "hr:l:c:p:y:i:o:" ) ) > 0 )
+	while ( ( cOption = (char)getopt ( argc, argv, "hr:l:c:p:y:i:o:" ) ) > 0 )
 	{
 		switch ( cOption )
 		{
@@ -159,7 +159,7 @@ int main ( int argc, char** argv )
 	const uint32_t* pPalRead	= pLayerPal == nullptr ? nullptr : pLayerPal->GetData ();
 	std::vector<uint16_t> vucCharDat;
 	vucCharDat.reserve ( pLayerGfx->GetWidth () * pLayerGfx->GetHeight () );
-	for ( size_t i = 0; i < size_t(pLayerGfx->GetWidth () * pLayerGfx->GetHeight () * 2); ++i )
+	for ( size_t i = 0; i < size_t(pLayerGfx->GetWidth () * pLayerGfx->GetHeight ()); ++i )
 	{
 		uint32_t uiRead = (*pRead++);
 
@@ -192,7 +192,7 @@ int main ( int argc, char** argv )
 		std::cerr << "Failed to create output file.";
 		return -1;
 	}
-	fout.write ( (const char*)vucCharDat.data (), vucCharDat.size () );
+	fout.write ( (const char*)vucCharDat.data (), vucCharDat.size () * sizeof(uint16_t) );
 	fout.close ();
 
 	// Convert collision map & save it out.
@@ -202,7 +202,7 @@ int main ( int argc, char** argv )
 		vucCollisionDat.reserve ( pLayerCls->GetWidth () * pLayerCls->GetHeight () );
 
 		const uint32_t* pRead = pLayerCls->GetData ();
-		for ( size_t i = 0; i < pLayerCls->GetWidth () * pLayerCls->GetHeight (); ++i )
+		for ( int i = 0; i < pLayerCls->GetWidth () * pLayerCls->GetHeight (); ++i )
 		{
 			uint8_t ucTile = (uint8_t)tmx.LidFromGid ( (*pRead++) & ~FLIP_MASK );
 			vucCollisionDat.push_back ( ucTile );
@@ -224,7 +224,7 @@ int main ( int argc, char** argv )
 		fout.open ( strPath, std::ios::binary );
 		if ( fout.is_open () )
 		{
-			fout.write ( (const char*)vucCollisionDat.data (), vucCollisionDat.size () );
+			fout.write ( (const char*)vucCollisionDat.data (), vucCollisionDat.size () * sizeof(uint8_t) );
 			fout.close ();
 		}
 	}
