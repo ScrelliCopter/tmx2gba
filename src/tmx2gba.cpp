@@ -23,6 +23,7 @@
 #include "tmxreader.h"
 #include "tmxlayer.h"
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <vector>
 #include <string>
@@ -120,6 +121,39 @@ bool ParseArgs ( int argc, char** argv, SParams* params )
 }
 
 
+template <typename T>
+void WriteArray ( std::ofstream& a_fout, const std::vector<T>& a_dat, int a_perCol = 16 )
+{
+	const int w = sizeof(T) * 2;
+	int col = 0;
+
+	size_t i = 0;
+	for ( T element : a_dat )
+	{
+		if ( col == 0 )
+		{
+			a_fout << "\t";
+		}
+
+		a_fout << "0x" << std::hex << std::setw ( w ) << std::setfill ( '0' ) << std::to_string(element);
+
+		if ( i < a_dat.size () - 1 )
+		{
+			if ( ++col < a_perCol )
+			{
+				a_fout << ", ";
+			}
+			else
+			{
+				a_fout << "," << std::endl;
+				col = 0;
+			}
+		}
+
+		++i;
+	}
+}
+
 int main ( int argc, char** argv )
 {
 	SParams params;
@@ -154,6 +188,35 @@ int main ( int argc, char** argv )
 		return -1;
 	}
 
+	// Open output files.
+	std::ofstream foutC ( params.outPath + ".c", std::ios::binary );
+	std::ofstream foutH ( params.outPath + ".h", std::ios::binary );
+	if ( !foutC.is_open () || !foutH.is_open () )
+	{
+		std::cerr << "Failed to create output file(s).";
+		return -1;
+	}
+
+	int slashPos = std::max ( (int)params.outPath.find_last_of ( '/' ), (int)params.outPath.find_last_of ( '\\' ) );
+	std::string name = params.outPath;
+	if ( slashPos != -1 )
+	{
+		name = name.substr ( slashPos + 1 );
+	}
+
+	// Write header guards.
+	std::string guard = "__TMX2GBA_" + name + "__";
+	for ( auto& c: guard ) c = toupper ( c );
+	foutH << "#ifndef " << guard << std::endl;
+	foutH << "#define " << guard << std::endl;
+	foutH << std::endl;
+	foutH << "#define " << name << "Width " << tmx.GetWidth () << std::endl;
+	foutH << "#define " << name << "Height " << tmx.GetHeight () << std::endl;
+	foutH << std::endl;
+
+	foutC << "#include \"" << name << ".h\"" << std::endl;
+	foutC << std::endl;
+
 	// Convert to GBA-friendly charmap data.
 	const uint32_t* pRead		= pLayerGfx->GetData ();
 	const uint32_t* pPalRead	= pLayerPal == nullptr ? nullptr : pLayerPal->GetData ();
@@ -186,6 +249,16 @@ int main ( int argc, char** argv )
 	}
 
 	// Save out charmap.
+	foutH << "#define " << name << "TilesLen " << vucCharDat.size () * 2 << std::endl;
+	foutH << "extern const unsigned short " << name << "Tiles[" << vucCharDat.size () << "];" << std::endl;
+	foutH << std::endl;
+
+	foutC << "const unsigned short " << name << "Tiles[" << vucCharDat.size () << "] =\n{" << std::endl;
+	WriteArray<uint16_t> ( foutC, vucCharDat );
+	foutC << std::endl << "};" << std::endl;
+	foutC << std::endl;
+
+	/*
 	std::ofstream fout ( params.outPath, std::ios::binary );
 	if ( !fout.is_open () )
 	{
@@ -194,6 +267,7 @@ int main ( int argc, char** argv )
 	}
 	fout.write ( (const char*)vucCharDat.data (), vucCharDat.size () * sizeof(uint16_t) );
 	fout.close ();
+	*/
 
 	// Convert collision map & save it out.
 	if ( pLayerCls != nullptr )
@@ -221,13 +295,28 @@ int main ( int argc, char** argv )
 		}
 
 		// Save it out.
+		foutH << "#define " << name << "CollisionLen " << vucCollisionDat.size () << std::endl;
+		foutH << "extern const unsigned char " << name << "Collision[" << vucCollisionDat.size () << "];" << std::endl;
+		foutH << std::endl;
+
+		foutC << "const unsigned char " << name << "Collision[" << vucCollisionDat.size () << "] =\n{" << std::endl;
+		WriteArray<uint8_t> ( foutC, vucCollisionDat );
+		foutC << std::endl << "};" << std::endl;
+
+		/*
 		fout.open ( strPath, std::ios::binary );
 		if ( fout.is_open () )
 		{
 			fout.write ( (const char*)vucCollisionDat.data (), vucCollisionDat.size () * sizeof(uint8_t) );
 			fout.close ();
 		}
+		*/
 	}
+
+	foutH << "#endif//" << guard << std::endl;
+
+	foutH.close ();
+	foutC.close ();
 
 	return 0;
 }
