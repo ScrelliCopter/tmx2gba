@@ -127,25 +127,45 @@ void WriteArray ( std::ofstream& a_fout, const std::vector<T>& a_dat, int a_perC
 	const int w = sizeof(T) * 2;
 	int col = 0;
 
+	std::string datType = "ERR";
+	if ( sizeof(T) == 1 )
+	{
+		datType = ".byte";
+	}
+	else
+	if ( sizeof(T) == 2 )
+	{
+		datType = ".hword";
+	}
+	else
+	if ( sizeof(T) == 4 )
+	{
+		datType = ".word";
+	}
+
+	a_fout.setf ( std::ios::hex, std::ios::basefield );
+	a_fout.setf ( std::ios::showbase );
+
 	size_t i = 0;
 	for ( T element : a_dat )
 	{
 		if ( col == 0 )
 		{
-			a_fout << "\t";
+			a_fout << "\t" << datType << " ";
 		}
 
-		a_fout << "0x" << std::hex << std::setw ( w ) << std::setfill ( '0' ) << std::to_string(element);
+		//a_fout << "0x" << std::hex << std::setw ( w ) << std::setfill ( '0' ) << (int)element;
+		a_fout << std::hex << (int)element;
 
 		if ( i < a_dat.size () - 1 )
 		{
 			if ( ++col < a_perCol )
 			{
-				a_fout << ", ";
+				a_fout << ",";
 			}
 			else
 			{
-				a_fout << "," << std::endl;
+				a_fout << "" << std::endl;
 				col = 0;
 			}
 		}
@@ -189,9 +209,9 @@ int main ( int argc, char** argv )
 	}
 
 	// Open output files.
-	std::ofstream foutC ( params.outPath + ".c", std::ios::binary );
+	std::ofstream foutS ( params.outPath + ".s", std::ios::binary );
 	std::ofstream foutH ( params.outPath + ".h", std::ios::binary );
-	if ( !foutC.is_open () || !foutH.is_open () )
+	if ( !foutS.is_open () || !foutH.is_open () )
 	{
 		std::cerr << "Failed to create output file(s).";
 		return -1;
@@ -206,16 +226,13 @@ int main ( int argc, char** argv )
 
 	// Write header guards.
 	std::string guard = "__TMX2GBA_" + name + "__";
-	for ( auto& c: guard ) c = toupper ( c );
+	for ( auto& c: guard ) c = (char)toupper ( (int)c );
 	foutH << "#ifndef " << guard << std::endl;
 	foutH << "#define " << guard << std::endl;
 	foutH << std::endl;
 	foutH << "#define " << name << "Width " << tmx.GetWidth () << std::endl;
 	foutH << "#define " << name << "Height " << tmx.GetHeight () << std::endl;
 	foutH << std::endl;
-
-	foutC << "#include \"" << name << ".h\"" << std::endl;
-	foutC << std::endl;
 
 	// Convert to GBA-friendly charmap data.
 	const uint32_t* pRead		= pLayerGfx->GetData ();
@@ -253,10 +270,13 @@ int main ( int argc, char** argv )
 	foutH << "extern const unsigned short " << name << "Tiles[" << vucCharDat.size () << "];" << std::endl;
 	foutH << std::endl;
 
-	foutC << "const unsigned short " << name << "Tiles[" << vucCharDat.size () << "] =\n{" << std::endl;
-	WriteArray<uint16_t> ( foutC, vucCharDat );
-	foutC << std::endl << "};" << std::endl;
-	foutC << std::endl;
+	foutS << "\t.section .rodata" << std::endl;
+	foutS << "\t.align 2" << std::endl;
+	foutS << "\t.global " << name << "Tiles" << std::endl;
+	foutS << "\t.hidden " << name << "Tiles" << std::endl;
+	foutS << name << "Tiles" << ":" << std::endl;
+	WriteArray<uint16_t> ( foutS, vucCharDat );
+	foutS << std::endl;
 
 	/*
 	std::ofstream fout ( params.outPath, std::ios::binary );
@@ -299,9 +319,14 @@ int main ( int argc, char** argv )
 		foutH << "extern const unsigned char " << name << "Collision[" << vucCollisionDat.size () << "];" << std::endl;
 		foutH << std::endl;
 
-		foutC << "const unsigned char " << name << "Collision[" << vucCollisionDat.size () << "] =\n{" << std::endl;
-		WriteArray<uint8_t> ( foutC, vucCollisionDat );
-		foutC << std::endl << "};" << std::endl;
+		foutS << std::endl;
+		foutS << "\t.section .rodata" << std::endl;
+		foutS << "\t.align 2" << std::endl;
+		foutS << "\t.global " << name << "Collision" << std::endl;
+		foutS << "\t.hidden " << name << "Collision" << std::endl;
+		foutS << name << "Collision" << ":" << std::endl;
+		WriteArray<uint8_t> ( foutS, vucCollisionDat );
+		foutS << std::endl;
 
 		/*
 		fout.open ( strPath, std::ios::binary );
@@ -316,7 +341,7 @@ int main ( int argc, char** argv )
 	foutH << "#endif//" << guard << std::endl;
 
 	foutH.close ();
-	foutC.close ();
+	foutS.close ();
 
 	return 0;
 }
