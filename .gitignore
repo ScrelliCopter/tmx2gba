@@ -43,3 +43,6 @@ editor.png
 .vs/
 *.opendb
 gfx/
+res/
+*.tmx2gba
+map/

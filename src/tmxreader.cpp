@@ -22,6 +22,7 @@
 
 #include "tmxreader.h"
 #include "tmxtileset.h"
+#include "tmxobject.h"
 #include "tmxlayer.h"
 #include <cstdint>
 #include <sstream>
@@ -39,18 +40,18 @@ CTmxReader::CTmxReader ()
 CTmxReader::~CTmxReader ()
 {
 	// Delete old tilesets.
-	for ( auto pTileset : m_vpTileset )
+	for ( auto pTileset : m_tileset )
 	{
 		delete pTileset;
 	}
-	m_vpTileset.clear ();
+	m_tileset.clear ();
 
 	// Delete old layers.
-	for ( auto pLay : m_vpLayers )
+	for ( auto pLay : m_layers )
 	{
 		delete pLay;
 	}
-	m_vpLayers.clear ();
+	m_layers.clear ();
 }
 
 
@@ -104,7 +105,7 @@ void CTmxReader::ReadTileset ( rapidxml::xml_node<>* a_xNode )
 		uiFirstGid = std::stoul ( xAttrib->value () );
 	}
 
-	m_vpTileset.push_back ( new CTmxTileset ( szName, szSource, uiFirstGid ) );
+	m_tileset.push_back ( new CTmxTileset ( szName, szSource, uiFirstGid ) );
 }
 
 void CTmxReader::ReadLayer ( rapidxml::xml_node<>* a_xNode )
@@ -149,26 +150,65 @@ void CTmxReader::ReadLayer ( rapidxml::xml_node<>* a_xNode )
 		}
 	}
 
-	m_vpLayers.push_back ( new CTmxLayer ( iWidth, iHeight, szName, pTileDat ) );
+	m_layers.push_back ( new CTmxLayer ( iWidth, iHeight, szName, pTileDat ) );
+}
+
+void CTmxReader::ReadObjects ( rapidxml::xml_node<>* a_xNode )
+{
+	for ( auto xNode = a_xNode->first_node (); xNode != nullptr; xNode = xNode->next_sibling () )
+	{
+		if ( strcmp ( xNode->name (), "object" ) != 0 )
+		{
+			continue;
+		}
+
+		rapidxml::xml_attribute<>* xAttrib;
+		const char*	name	= "";
+		float		x		= 0.0f;
+		float		y		= 0.0f;
+
+		// Read name.
+		xAttrib = xNode->first_attribute ( "name" );
+		if ( xAttrib != nullptr )
+		{
+			name = xAttrib->value ();
+		}
+
+		// Read X pos.
+		xAttrib = xNode->first_attribute ( "x" );
+		if ( xAttrib != nullptr )
+		{
+			x = std::stof ( xAttrib->value () );
+		}
+
+		// Read Y pos.
+		xAttrib = xNode->first_attribute ( "y" );
+		if ( xAttrib != nullptr )
+		{
+			y = std::stof ( xAttrib->value () );
+		}
+
+		m_objects.push_back ( new CTmxObject ( name, x, y ) );
+	}
 }
 
 void CTmxReader::Open ( std::istream& a_in )
 {
 	// Delete old tilesets.
-	for ( auto pTileset : m_vpTileset )
+	for ( auto pTileset : m_tileset )
 	{
 		delete pTileset;
 	}
-	m_vpTileset.clear ();
+	m_tileset.clear ();
 
 	// Delete old layers.
-	for ( auto pLay : m_vpLayers )
+	for ( auto pLay : m_layers )
 	{
 		delete pLay;
 	}
-	m_vpLayers.clear ();
+	m_layers.clear ();
 
-	m_vuiGidTable.clear ();
+	m_gidTable.clear ();
 
 	// Read string into a buffer.
 	std::stringstream buf;
@@ -191,11 +231,11 @@ void CTmxReader::Open ( std::istream& a_in )
 	rapidxml::xml_attribute<>* xAttrib = nullptr;
 	if ( ( xAttrib = xMap->first_attribute ( "width" ) ) != nullptr )
 	{
-		m_iWidth = std::stoi ( xAttrib->value () );
+		m_width = std::stoi ( xAttrib->value () );
 	}
 	if ( ( xAttrib = xMap->first_attribute ( "height" ) ) != nullptr )
 	{
-		m_iHeight = std::stoi ( xAttrib->value () );
+		m_height = std::stoi ( xAttrib->value () );
 	}
 
 	// Read nodes.
@@ -211,36 +251,41 @@ void CTmxReader::Open ( std::istream& a_in )
 		{
 			ReadTileset ( xNode );
 		}
+		else
+		if ( strcmp ( xNode->name (), "objectgroup" ) == 0 )
+		{
+			ReadObjects ( xNode );
+		}
 	}
 
 	// Generate global id table.
-	for ( auto pTileset : m_vpTileset )
+	for ( auto pTileset : m_tileset )
 	{
-		m_vuiGidTable.push_back ( pTileset->GetFirstGid () );
+		m_gidTable.push_back ( pTileset->GetFirstGid () );
 	}
-	std::sort ( m_vuiGidTable.rbegin (), m_vuiGidTable.rend () );
+	std::sort ( m_gidTable.rbegin (), m_gidTable.rend () );
 }
 
 
 int CTmxReader::GetWidth () const
 {
-	return m_iWidth;
+	return m_width;
 }
 
 int CTmxReader::GetHeight () const
 {
-	return m_iHeight;
+	return m_height;
 }
 
 
-const CTmxLayer* CTmxReader::GetLayer ( int a_iId ) const
+const CTmxLayer* CTmxReader::GetLayer ( int a_id ) const
 {
-	return m_vpLayers[a_iId];
+	return m_layers[a_id];
 }
 
 const CTmxLayer* CTmxReader::GetLayer ( std::string a_strName ) const
 {
-	for ( auto pLay : m_vpLayers )
+	for ( auto pLay : m_layers )
 	{
 		if ( pLay->GetName ().compare ( a_strName ) == 0 )
 		{
@@ -253,13 +298,24 @@ const CTmxLayer* CTmxReader::GetLayer ( std::string a_strName ) const
 
 int CTmxReader::GetLayerCount () const
 {
-	return m_vpLayers.size ();
+	return m_layers.size ();
+}
+
+
+const CTmxObject* CTmxReader::GetObject ( int a_id ) const
+{
+	return m_objects[a_id];
+}
+
+int CTmxReader::GetObjectCount () const
+{
+	return m_objects.size ();
 }
 
 
 uint32_t CTmxReader::LidFromGid ( uint32_t a_uiGid )
 {
-	for ( uint32_t uiFirst : m_vuiGidTable )
+	for ( uint32_t uiFirst : m_gidTable )
 	{
 		if ( uiFirst <= a_uiGid )
 		{
