@@ -149,13 +149,6 @@ char	*optarg;		// global argument pointer
 char	*next;
 int		optind = 0; 	// global argv index
 
-void getoptClear ()
-{
-	optarg = nullptr;
-	next = nullptr;
-	optind = 0;
-}
-
 int getopt(int argc, char *argv[], char *optstring)
 {
 	if (optind == 0)

@@ -1,6 +1,6 @@
 # tmx2gba #
-tmx2gba is a simple command line utility that converts Tiled (http://www.mapeditor.org/) .tmx maps to Game Boy Advance compatible charmaps.
-Originally developed for my own personal use, I've thrown it up on glorious Github in case this is of use to anyone else.
+tmx2gba is a simple command line utility that converts [Tiled](http://www.mapeditor.org/) .tmx maps to Game Boy Advance compatible charmaps.
+Originally developed for my own personal use, I've thrown it up on glorious Github/Gitlab/whatever in case this is of use to anyone else.
 
 If you find a bug, please open an issue.
 
@@ -18,25 +18,40 @@ tmx2gba [-h] [-r offset] [-lyc name] [-p 0-15] <-i inpath> <-o outpath>
 ```
 
 Command     | Required | Notes
-------------|----------|-------------------------------------------------------------
+------------|----------|----------------------------------------------------------------------
 -h          | N/A      | Display help & command info.
 -l (name)   | No       | Name of layer to use (default first layer in TMX).
 -y (name)   | No       | Layer for palette mappings.
 -c (name)   | No       | Output a separate 8bit collision map of the specified layer.
 -r (offset) | No       | Offset tile indices (default 0).
 -p (0-15)   | No       | Select which palette to use for 4-bit tilesets.
+-m (name;id)| No       | Map an object name to an ID, will enable object exports.
 -i (path)   | *Yes*    | Path to input TMX file.
 -o (path)   | *Yes*    | Path to output files.
+-f <file>   | No       | Command line instructions list for easy integration with buildscripts
+
+### How do I build it? ###
+
+Dependencies for building are CMake 3.x and a C++11 compliant compiler,
+all other dependencies are in-tree so you should be able to build with:
+```bash
+mkdir build && cd build
+cmake ..
+make
+```
+
+Optionally, to make it convenient for my dkp projects:
+```bash
+sudo cp tmx2gba $DEVKITPRO/tools/bin/tmx2gba
+```
 
 ### Todo list ###
 * Add support for multi-SBB prepared charmaps.
-* Test on & write Makefile for Linux.
-* Export to C/ASM with width/height info.
+* Test CMakeLists for Windows compatibility.
 * Check if this works for NDS as well.
-* Implement some kind of grit-style parameters file for easy integration into buildscripts.
-* Revamp command line arguments.
 * Compression support.
-* Refactor & Fix bugs.
+* Prehaps use GNU style getopt_long?
+* Refactor & Fix bugs. *(duh)*
 
 ### License ###
 tmx2gba is licensed under the zlib license.
@@ -45,7 +60,7 @@ René Nyffenegger's base64.cpp is licensed under the zlib license.
 XGetopt & miniz are both public domain software.
 
 ```
-  Copyright (C) 2015 Nicholas Curtis
+  Copyright (C) 2015-2018 Nicholas Curtis (a dinosaur)
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages

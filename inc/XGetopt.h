@@ -18,7 +18,6 @@
 extern int optind;
 extern char *optarg, *next;
 
-void getoptClear ();
 int getopt(int argc, char *argv[], char *optstring);
 
 #endif //XGETOPT_H

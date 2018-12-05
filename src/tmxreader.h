@@ -5,11 +5,11 @@
 #include <vector>
 #include <string>
 #include <cstdint>
+#include <rapidxml/rapidxml.hpp>
 
 class CTmxTileset;
 class CTmxLayer;
 class CTmxObject;
-namespace rapidxml { template<class Ch = char> class xml_node; }
 
 class CTmxReader
 {

@@ -1,6 +1,6 @@
 /* tmx2gba.cpp
 
-  Copyright (C) 2015 Nicholas Curtis
+  Copyright (C) 2015-2018 Nicholas Curtis (a dinosaur)
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -31,7 +31,12 @@
 #include <string>
 #include <cstdint>
 #include <algorithm>
-#include <XGetopt.h>
+
+#ifdef _MSC_VER
+  #include <XGetopt.h>
+#else
+  #include <getopt.h>
+#endif
 
 using std::cout;
 using std::cerr;
@@ -58,7 +63,7 @@ static const string g_strHelpFull = R"(
 -m <name;id> -- Map an object name to an ID, will enable object exports.
 -i <path> ----- Path to input TMX file.
 -o <path> ----- Path to output files.
--f <file> ----- Specify a file to use for flags, will override any options specified in the cmd line.)";
+-f <file> ----- Specify a file to use for flags, will override any options specified on the command line.)";
 
 struct SParams
 {
@@ -72,10 +77,19 @@ struct SParams
 	bool objExport = false;
 };
 
+void GetoptClear ()
+{
+	optarg = nullptr;
+	optind = 0;
+#ifdef _MSC_VER
+	next = nullptr;
+#endif
+}
+
 void ParseArgs ( int argc, char** argv, SParams* params )
 {
 	char cOption;
-	getoptClear ();
+	GetoptClear ();
 	while ( ( cOption = (char)getopt ( argc, argv, "hr:l:c:p:y:m:i:o:f:" ) ) > 0 )
 	{
 		switch ( cOption )
