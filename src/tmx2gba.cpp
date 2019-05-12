@@ -79,10 +79,12 @@ struct SParams
 
 void GetoptClear ()
 {
+#ifdef _MSC_VER
 	optarg = nullptr;
 	optind = 0;
-#ifdef _MSC_VER
 	next = nullptr;
+#else
+	optreset = 1;
 #endif
 }
 
