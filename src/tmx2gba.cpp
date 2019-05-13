@@ -280,8 +280,9 @@ int main ( int argc, char** argv )
 		{
 			fileArgs.push_back ( token.c_str () );
 		}
+		fileArgs.push_back(nullptr);
 
-		ParseArgs ( fileArgs.size (), (char**)fileArgs.data (), &params );
+		ParseArgs ( fileArgs.size () - 1, (char**)fileArgs.data (), &params );
 	}
 
 	if ( !CheckArgs ( &params ) )
