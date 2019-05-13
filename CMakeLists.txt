@@ -30,6 +30,7 @@ set(SOURCES
 	src/tmxreader.cpp	src/tmxreader.h
 	src/tmxtileset.cpp	src/tmxtileset.h
 
+	src/ultragetopt.c	inc/ultragetopt.h
 	src/base64.cpp		inc/base64.h
 	inc/miniz.h
 
@@ -37,9 +38,5 @@ set(SOURCES
 	inc/rapidxml/rapidxml_iterators.hpp
 	inc/rapidxml/rapidxml_print.hpp
 	inc/rapidxml/rapidxml_utils.hpp)
-
-if (MSVC)
-	set(SOURCES ${SOURCES} src/XGetopt.cpp inc/XGetopt.h)
-endif()
 
 add_executable(tmx2gba ${SOURCES})

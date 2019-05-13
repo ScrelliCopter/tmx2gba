@@ -31,12 +31,8 @@
 #include <string>
 #include <cstdint>
 #include <algorithm>
+#include <ultragetopt.h>
 
-#ifdef _MSC_VER
-  #include <XGetopt.h>
-#else
-  #include <getopt.h>
-#endif
 
 using std::cout;
 using std::cerr;
@@ -77,22 +73,10 @@ struct SParams
 	bool objExport = false;
 };
 
-void GetoptClear ()
-{
-#ifdef _MSC_VER
-	optarg = nullptr;
-	optind = 0;
-	next = nullptr;
-#else
-	optreset = 1;
-	optind = 1;
-#endif
-}
-
 void ParseArgs ( int argc, char** argv, SParams* params )
 {
 	char cOption;
-	GetoptClear ();
+	optreset = 1;
 	while ( ( cOption = (char)getopt ( argc, argv, "hr:l:c:p:y:m:i:o:f:" ) ) > 0 )
 	{
 		switch ( cOption )
