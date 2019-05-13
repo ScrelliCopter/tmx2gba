@@ -85,6 +85,7 @@ void GetoptClear ()
 	next = nullptr;
 #else
 	optreset = 1;
+	optind = 1;
 #endif
 }
 
