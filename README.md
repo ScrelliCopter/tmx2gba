@@ -54,13 +54,14 @@ sudo cp tmx2gba $DEVKITPRO/tools/bin/tmx2gba
 * Refactor & Fix bugs. *(duh)*
 
 ### License ###
-tmx2gba is licensed under the zlib license.
-RapidXML is licensed under the Boost & MIT licenses.
-René Nyffenegger's base64.cpp is licensed under the zlib license.
-XGetopt & miniz are both public domain software.
+[tmx2gba](https://github.com/ScrelliCopter/tmx2gba) is licensed under the zlib license.
+[RapidXML](http://rapidxml.sourceforge.net/) is licensed under the Boost & MIT licenses.
+[René Nyffenegger's base64.cpp](https://github.com/ReneNyffenegger/cpp-base64) is licensed under the zlib license.
+[miniz](https://github.com/richgel999/miniz) is public domain software.
+[ultragetopt](https://github.com/kevinoid/ultragetopt) is licensed under the MIT license.
 
 ```
-  Copyright (C) 2015-2018 Nicholas Curtis (a dinosaur)
+  Copyright (C) 2015-2019 Nicholas Curtis (a dinosaur)
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
