@@ -49,12 +49,12 @@ TmxReader::~TmxReader()
 bool TmxReader::DecodeMap(uint32_t* aOut, size_t aOutSize, const std::string& aBase64Dat)
 {
 	// Cut leading & trailing whitespace (including newlines)
-	auto beg = std::find_if_not(aBase64Dat.begin(), aBase64Dat.end(), std::isspace);
+	auto beg = std::find_if_not(aBase64Dat.begin(), aBase64Dat.end(), ::isspace);
 	if (beg == std::end(aBase64Dat))
 		return false;
-	auto end = std::find_if_not(aBase64Dat.rbegin(), aBase64Dat.rend(), std::isspace);
-	std::size_t begOff = std::distance(std::begin(aBase64Dat), beg);
-	std::size_t endOff = std::distance(end, std::rend(aBase64Dat)) - begOff;
+	auto end = std::find_if_not(aBase64Dat.rbegin(), aBase64Dat.rend(), ::isspace);
+	std::size_t begOff = std::distance(aBase64Dat.begin(), beg);
+	std::size_t endOff = std::distance(end, aBase64Dat.rend()) - begOff;
 	auto trimmed = aBase64Dat.substr(begOff, endOff);
 
 	// Decode base64 string.
