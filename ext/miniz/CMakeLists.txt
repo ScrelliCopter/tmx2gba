@@ -1,4 +1,5 @@
-add_library(miniz INTERFACE)
+add_library(miniz
+	miniz.c miniz.h)
 add_library(External::miniz ALIAS miniz)
 target_include_directories(miniz
-	INTERFACE ${CMAKE_CURRENT_SOURCE_DIR})
+	PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -27,7 +27,7 @@
 #include <cstdint>
 #include <sstream>
 #include <algorithm>
-#include <rapidxml.hpp>
+#include <rapidxml/rapidxml.hpp>
 #include <base64.h>
 #include <miniz.h>
 

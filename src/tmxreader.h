@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 #include <cstdint>
-#include <rapidxml.hpp>
+#include <rapidxml/rapidxml.hpp>
 
 class CTmxTileset;
 class CTmxLayer;
