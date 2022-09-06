@@ -1,6 +1,6 @@
 /* tmxlayer.cpp
 
-  Copyright (C) 2015 Nicholas Curtis
+  Copyright (C) 2015 a dinosaur
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages

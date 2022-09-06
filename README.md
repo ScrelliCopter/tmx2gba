@@ -61,7 +61,7 @@ sudo cp tmx2gba $DEVKITPRO/tools/bin/tmx2gba
 [ultragetopt](https://github.com/kevinoid/ultragetopt) is licensed under the MIT license.
 
 ```
-  Copyright (C) 2015-2019 Nicholas Curtis (a dinosaur)
+  Copyright (C) 2015-2022 a dinosaur
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages

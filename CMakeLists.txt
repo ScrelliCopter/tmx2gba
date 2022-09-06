@@ -1,42 +1,29 @@
-# tmx2gba - CMakeLists.txt
-# Copyright (C) 2018 Nicholas Curtis (a dinosaur)
-#
-# This software is provided 'as-is', without any express or implied
-# warranty.  In no event will the authors be held liable for any damages
-# arising from the use of this software.
-#
-# Permission is granted to anyone to use this software for any purpose,
-# including commercial applications, and to alter it and redistribute it
-# freely, subject to the following restrictions:
-#
-# 1. The origin of this software must not be misrepresented; you must not
-#    claim that you wrote the original software. If you use this software
-#    in a product, an acknowledgment in the product documentation would be
-#    appreciated but is not required.
-# 2. Altered source versions must be plainly marked as such, and must not be
-#    misrepresented as being the original software.
-# 3. This notice may not be removed or altered from any source distribution.
-
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(tmx2gba)
 
+# C++11 & C99
 set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_C_STANDARD 99)
 
-include_directories(inc)
-set(SOURCES
-	src/tmx2gba.cpp
-	src/tmxlayer.cpp	src/tmxlayer.h
-	src/tmxobject.cpp	src/tmxobject.h
-	src/tmxreader.cpp	src/tmxreader.h
-	src/tmxtileset.cpp	src/tmxtileset.h
+# Enable strong warnings
+if (MSVC)
+	string(REPLACE "/W3" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+	string(REPLACE "/W3" "/W4" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
+else()
+	add_compile_options(-Wall)
+endif()
 
-	src/ultragetopt.c	inc/ultragetopt.h
-	src/base64.cpp		inc/base64.h
-	inc/miniz.h
+# Libraries
+add_subdirectory(ext/base64)
+add_subdirectory(ext/miniz)
+add_subdirectory(ext/rapidxml)
+add_subdirectory(ext/ultragetopt)
 
-	inc/rapidxml/rapidxml.hpp
-	inc/rapidxml/rapidxml_iterators.hpp
-	inc/rapidxml/rapidxml_print.hpp
-	inc/rapidxml/rapidxml_utils.hpp)
+# Main tmx2gba sources
+add_subdirectory(src)
 
-add_executable(tmx2gba ${SOURCES})
+if (MSVC)
+	# Default to tmx2gba as startup project when generating Solutions
+	set_property(DIRECTORY ${CMAKE_SOURCE_DIR}
+		PROPERTY VS_STARTUP_PROJECT tmx2gba)
+endif()

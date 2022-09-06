@@ -1,6 +1,6 @@
 /* tmx2gba.cpp
 
-  Copyright (C) 2015-2019 Nicholas Curtis (a dinosaur)
+  Copyright (C) 2015-2022 a dinosaur
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages

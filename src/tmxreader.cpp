@@ -1,6 +1,6 @@
 /* tmxreader.cpp
 
-  Copyright (C) 2015 Nicholas Curtis
+  Copyright (C) 2015 a dinosaur
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -27,7 +27,7 @@
 #include <cstdint>
 #include <sstream>
 #include <algorithm>
-#include <rapidxml/rapidxml.hpp>
+#include <rapidxml.hpp>
 #include <base64.h>
 #include <miniz.h>
 

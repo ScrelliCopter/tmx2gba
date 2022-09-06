@@ -27,7 +27,7 @@
 *.out
 *.app
 
-# VS rubbish.
+# VS rubbish
 Debug/
 Release/
 *.opensdf
@@ -35,7 +35,14 @@ Release/
 *.v12.suo
 *.vcxproj.user
 
-# Some files I used for testing.
+# CLion Rubbish
+.idea/
+
+# CMake Rubbish
+build/
+cmake-build-*/
+
+# Some files I used for testing
 *.tmx
 *.raw
 plains.png
