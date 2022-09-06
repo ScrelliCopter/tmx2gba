@@ -1,6 +1,6 @@
-/* tmxobject.cpp
+/* tmxtileset.cpp
 
-  Copyright (C) 2015 a dinosaur
+  Copyright (C) 2015-2022 a dinosaur
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages
@@ -20,42 +20,30 @@
 
 */
 
-#include "tmxobject.h"
+#ifndef TMXTILESET_H
+#define TMXTILESET_H
 
-CTmxObject::CTmxObject () :
-	m_name ( "" ),
-	m_x ( 0.0f ), m_y ( 0.0f )
+#include <string>
+#include <cstdint>
+#include <utility>
+
+class TmxTileset
 {
+public:
+	TmxTileset() : mFirstGid(0) {}
+	TmxTileset(std::string aName, std::string aSource, uint32_t aFirstGid)
+		: mName(std::move(aName)), mSource(std::move(aSource)), mFirstGid(aFirstGid) {}
+	~TmxTileset() = default;
 
-}
+	constexpr const std::string& GetName() const { return mName; }
+	constexpr const std::string& GetSource() const { return mSource; }
+	constexpr uint32_t GetFirstGid() const { return mFirstGid; }
 
-CTmxObject::CTmxObject ( const std::string& a_name, float a_x, float a_y ) :
-	m_name ( a_name ),
-	m_x ( a_x ), m_y ( a_y )
-{
+private:
+	std::string mName;
+	std::string mSource;
+	uint32_t mFirstGid;
 
-}
+};
 
-CTmxObject::~CTmxObject ()
-{
-
-}
-
-
-const std::string& CTmxObject::GetName () const
-{
-	return m_name;
-}
-
-void CTmxObject::GetPos ( float* a_outX, float* a_outY ) const
-{
-	if ( a_outX != nullptr )
-	{
-		*a_outX = m_x;
-	}
-	if ( a_outY != nullptr )
-	{
-		*a_outY = m_y;
-	}
-}
-
+#endif//TMXTILESET_H
