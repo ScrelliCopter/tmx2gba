@@ -32,7 +32,7 @@ public:
 	uint32_t LidFromGid(uint32_t aGid);
 
 private:
-	static bool DecodeMap(uint32_t* aOut, size_t aOutSize, const std::string& aStrIn);
+	static bool DecodeMap(uint32_t* aOut, size_t aOutSize, const std::string& aBase64Dat);
 	void ReadTileset(rapidxml::xml_node<>* aXNode);
 	void ReadLayer(rapidxml::xml_node<>* aXNode);
 	void ReadObjects(rapidxml::xml_node<>* aXNode);

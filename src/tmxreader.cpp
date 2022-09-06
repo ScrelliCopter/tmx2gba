@@ -46,11 +46,19 @@ TmxReader::~TmxReader()
 }
 
 
-bool TmxReader::DecodeMap(uint32_t* aOut, size_t aOutSize, const std::string& aStrIn)
+bool TmxReader::DecodeMap(uint32_t* aOut, size_t aOutSize, const std::string& aBase64Dat)
 {
+	// Cut leading & trailing whitespace (including newlines)
+	auto beg = std::find_if_not(aBase64Dat.begin(), aBase64Dat.end(), std::isspace);
+	if (beg == std::end(aBase64Dat))
+		return false;
+	auto end = std::find_if_not(aBase64Dat.rbegin(), aBase64Dat.rend(), std::isspace);
+	std::size_t begOff = std::distance(std::begin(aBase64Dat), beg);
+	std::size_t endOff = std::distance(end, std::rend(aBase64Dat)) - begOff;
+	auto trimmed = aBase64Dat.substr(begOff, endOff);
+
 	// Decode base64 string.
-	size_t cutTheCrap = aStrIn.find_first_not_of(" \t\n\r");
-	std::string decoded = base64_decode(aStrIn.substr(cutTheCrap));
+	std::string decoded = base64_decode(trimmed);
 
 	// Decompress compressed data.
 	auto dstSize = static_cast<mz_ulong>(aOutSize);
