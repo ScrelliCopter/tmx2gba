@@ -35,13 +35,27 @@ tmx2gba [-h] [-r offset] [-lyc name] [-p 0-15] <-i inpath> <-o outpath>
 Dependencies for building are CMake 3.x and a C++11 compliant compiler,
 all other dependencies are in-tree so you should be able to build with:
 ```bash
-cmake -B build
+cmake -B build -DCMAKE_BUILD_TYPE=RelWithDebInfo
 make -C build -j$(nproc --all)
 ```
 
-Optionally, to make it convenient for my dkp projects:
+Optionally, you may install it to use it system wide:
 ```bash
-sudo cp tmx2gba $DEVKITPRO/tools/bin/tmx2gba
+sudo cmake --install build
+```
+Which will copy the tmx2gba executable to /usr/local/bin/tmx2gba by default,
+if you prefer to use /usr for some reason you may specify a prefix like so:
+```bash
+sudo cmake --install build --prefix /usr
+```
+If you're a devkitPro user and would prefer to keep all your development tools compartmentalised
+you may optionally install to the tools directory with the `TMX2GBA_DKP_INSTALL` option (OFF by default).
+The build scripts will respect your `DEVKITPRO` environment variable but if not set will install to
+`/opt/devkitpro/tools/bin/tmx2gba` directly, the `--prefix` argument has no effect in this mode.
+```bash
+cmake -B build -DCMAKE_BUILD_TYPE=Release -DTMX2GBA_DKP_INSTALL:BOOL=ON
+cmake --build build
+sudo cmake --install build
 ```
 
 ### Todo list ###
@@ -58,7 +72,7 @@ sudo cp tmx2gba $DEVKITPRO/tools/bin/tmx2gba
 [ultragetopt](https://github.com/kevinoid/ultragetopt) is licensed under the MIT license.
 
 ```
-  Copyright (C) 2015-2022 a dinosaur
+  Copyright (C) 2015-2023 a dinosaur
 
   This software is provided 'as-is', without any express or implied
   warranty.  In no event will the authors be held liable for any damages

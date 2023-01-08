@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
 project(tmx2gba)
 
+# Options
+option(TMX2GBA_DKP_INSTALL "Install into DEVKITPRO prefix" OFF)
+
 # C++11 & C99
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_C_STANDARD 99)
