@@ -3,6 +3,7 @@ project(tmx2gba)
 
 # Options
 option(TMX2GBA_DKP_INSTALL "Install into DEVKITPRO prefix" OFF)
+option(ASAN "Enable address sanitiser" OFF)
 
 # C++11 & C99
 set(CMAKE_CXX_STANDARD 11)
@@ -14,6 +15,11 @@ if (MSVC)
 	string(REPLACE "/W3" "/W4" CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
 else()
 	add_compile_options(-Wall)
+endif()
+
+if (ASAN)
+	add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
+	add_link_options(-fsanitize=address -shared-libasan)
 endif()
 
 # Libraries
