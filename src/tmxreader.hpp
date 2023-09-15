@@ -1,3 +1,5 @@
+/* tmxreader.hpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
+
 #ifndef TMXREADER_H
 #define TMXREADER_H
 
