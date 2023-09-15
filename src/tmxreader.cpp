@@ -14,12 +14,12 @@
 
 TmxReader::~TmxReader()
 {
-	// Delete old tilesets.
+	// Delete old tilesets
 	for (auto pTileset : mTilesets)
 		delete pTileset;
 	mTilesets.clear();
 
-	// Delete old layers.
+	// Delete old layers
 	for (auto pLay : mLayers)
 		delete pLay;
 	mLayers.clear();
@@ -37,10 +37,10 @@ bool TmxReader::DecodeMap(uint32_t* aOut, size_t aOutSize, const std::string& aB
 	std::size_t endOff = std::distance(end, aBase64Dat.rend()) - begOff;
 	auto trimmed = aBase64Dat.substr(begOff, endOff);
 
-	// Decode base64 string.
+	// Decode base64 string
 	std::string decoded = base64_decode(trimmed);
 
-	// Decompress compressed data.
+	// Decompress compressed data
 	auto dstSize = static_cast<mz_ulong>(aOutSize);
 	int res = uncompress(
 		(unsigned char*)aOut,
@@ -62,17 +62,17 @@ void TmxReader::ReadTileset(rapidxml::xml_node<>* aXNode)
 	const char*	source = "";
 	uint32_t firstGid = 0;
 
-	// Read name.
+	// Read name
 	xAttrib = aXNode->first_attribute("name");
 	if (xAttrib != nullptr)
 		name = xAttrib->value();
 
-	// Read source.
+	// Read source
 	xAttrib = aXNode->first_attribute("source");
 	if (xAttrib != nullptr)
 		source = xAttrib->value();
 
-	// Read first global ID.
+	// Read first global ID
 	xAttrib = aXNode->first_attribute("firstgid");
 	if (xAttrib != nullptr)
 		firstGid = std::stoul(xAttrib->value());
@@ -88,26 +88,26 @@ void TmxReader::ReadLayer(rapidxml::xml_node<>* aXNode)
 	int         height  = 0;
 	uint32_t*   tileDat = nullptr;
 
-	// Read name.
+	// Read name
 	xAttrib = aXNode->first_attribute("name");
 	if (xAttrib != nullptr)
 		name = xAttrib->value();
 
-	// Read width.
+	// Read width
 	xAttrib = aXNode->first_attribute("width");
 	if (xAttrib != nullptr)
 		width = std::stoi(xAttrib->value());
 
-	// Read height.
+	// Read height
 	xAttrib = aXNode->first_attribute("height");
 	if (xAttrib != nullptr)
 		height = std::stoi(xAttrib->value());
 
-	// Read tile data.
+	// Read tile data
 	auto xData = aXNode->first_node("data");
 	if (xData != nullptr)
 	{
-		// TODO: don't assume base64 & zlib.
+		// TODO: don't assume base64 & zlib
 		tileDat = new uint32_t[width * height];
 		if (!DecodeMap(tileDat, width * height * sizeof(uint32_t), std::string(xData->value())))
 		{
@@ -131,17 +131,17 @@ void TmxReader::ReadObjects(rapidxml::xml_node<>* aXNode)
 		float x = 0.0f;
 		float y = 0.0f;
 
-		// Read name.
+		// Read name
 		xAttrib = xNode->first_attribute("name");
 		if (xAttrib != nullptr)
 			name = xAttrib->value();
 
-		// Read X pos.
+		// Read X pos
 		xAttrib = xNode->first_attribute("x");
 		if (xAttrib != nullptr)
 			x = std::stof(xAttrib->value());
 
-		// Read Y pos.
+		// Read Y pos
 		xAttrib = xNode->first_attribute("y");
 		if (xAttrib != nullptr)
 			y = std::stof(xAttrib->value());
@@ -152,44 +152,44 @@ void TmxReader::ReadObjects(rapidxml::xml_node<>* aXNode)
 
 void TmxReader::Open(std::istream& aIn)
 {
-	// Delete old tilesets.
+	// Delete old tilesets
 	for (auto tileset : mTilesets)
 		delete tileset;
 	mTilesets.clear();
 
-	// Delete old layers.
+	// Delete old layers
 	for (auto layer : mLayers)
 		delete layer;
 	mLayers.clear();
 
 	mGidTable.clear();
 
-	// Read string into a buffer.
+	// Read string into a buffer
 	std::stringstream buf;
 	buf << aIn.rdbuf();
 	std::string strXml = buf.str();
 	buf.clear();
 
-	// Parse document.
+	// Parse document
 	rapidxml::xml_document<> xDoc;
 	xDoc.parse<0>((char*)strXml.c_str());
 
-	// Get map node.
+	// Get map node
 	auto xMap = xDoc.first_node("map");
 	if (xMap == nullptr)
 		return;
 
-	// Read map attribs.
+	// Read map attribs
 	rapidxml::xml_attribute<>* xAttrib = nullptr;
 	if ((xAttrib = xMap->first_attribute("width")) != nullptr)
 		mWidth = std::stoi(xAttrib->value());
 	if ((xAttrib = xMap->first_attribute("height")) != nullptr)
 		mHeight = std::stoi(xAttrib->value());
 
-	// Read nodes.
+	// Read nodes
 	for (auto xNode = xMap->first_node(); xNode != nullptr; xNode = xNode->next_sibling())
 	{
-		// Read layer nodes.
+		// Read layer nodes
 		if (strcmp(xNode->name(), "layer") == 0)
 			ReadLayer(xNode);
 		else
@@ -200,7 +200,7 @@ void TmxReader::Open(std::istream& aIn)
 			ReadObjects(xNode);
 	}
 
-	// Generate global id table.
+	// Generate global id table
 	for (auto tileset : mTilesets)
 		mGidTable.push_back(tileset->GetFirstGid());
 	std::sort(mGidTable.rbegin(), mGidTable.rend());

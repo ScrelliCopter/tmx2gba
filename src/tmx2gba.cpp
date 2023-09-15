@@ -4,7 +4,6 @@
 #include "tmxlayer.hpp"
 #include "tmxobject.hpp"
 #include <iostream>
-#include <iomanip>
 #include <fstream>
 #include <vector>
 #include <map>
@@ -75,7 +74,7 @@ void ParseArgs(int argc, char** argv, Arguments& p)
 
 bool CheckArgs(const Arguments& params)
 {
-	// Check my paranoia.
+	// Check my paranoia
 	if (params.inPath.empty())
 	{
 		std::cerr << "No input file specified." << std::endl;
@@ -215,7 +214,7 @@ int main(int argc, char** argv)
 	if (!CheckArgs(p))
 		return -1;
 
-	// Object mappings.
+	// Object mappings
 	std::map<std::string, uint32_t> objMapping;
 	if (p.objExport)
 	{
@@ -242,7 +241,7 @@ int main(int argc, char** argv)
 		}
 	}
 
-	// Open & read input file.
+	// Open & read input file
 	TmxReader tmx;
 	std::ifstream fin(p.inPath);
 	if (!fin.is_open())
@@ -252,7 +251,7 @@ int main(int argc, char** argv)
 	}
 	tmx.Open(fin);
 
-	// Get layers.
+	// Get layers
 	if (tmx.GetLayerCount() == 0)
 	{
 		std::cerr << "No layers found." << std::endl;
@@ -274,7 +273,7 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	// Open output files.
+	// Open output files
 	std::ofstream foutS(p.outPath + ".s");
 	std::ofstream foutH(p.outPath + ".h");
 	if (!foutS.is_open() || !foutH.is_open())
@@ -288,7 +287,7 @@ int main(int argc, char** argv)
 	if (slashPos != -1)
 		name = name.substr(slashPos + 1);
 
-	// Write header guards.
+	// Write header guards
 	std::string guard = "TMX2GBA_" + name;
 	for (auto& c: guard)
 		c = static_cast<char>(toupper(c));
@@ -299,7 +298,7 @@ int main(int argc, char** argv)
 	foutH << "#define " << name << "Height " << tmx.GetHeight() << std::endl;
 	foutH << std::endl;
 
-	// Convert to GBA-friendly charmap data.
+	// Convert to GBA-friendly charmap data
 	const uint32_t* gfxTiles = layerGfx->GetData();
 	const uint32_t* palTiles = (layerPal == nullptr) ? nullptr : layerPal->GetData();
 	std::vector<uint16_t> charDat;
@@ -316,7 +315,7 @@ int main(int argc, char** argv)
 		flags |= (read & TmxLayer::FLIP_HORZ) ? 0x4 : 0x0;
 		flags |= (read & TmxLayer::FLIP_VERT) ? 0x8 : 0x0;
 
-		// Determine palette ID.
+		// Determine palette ID
 		uint32_t idx = 0;
 		if (palTiles != nullptr)
 			idx = tmx.LidFromGid((*palTiles++) & ~TmxLayer::FLIP_MASK);
@@ -327,7 +326,7 @@ int main(int argc, char** argv)
 		charDat.push_back(tile | (static_cast<uint16_t>(flags) << 8));
 	}
 
-	// Save out charmap.
+	// Write out charmap
 	foutH << "#define " << name << "TilesLen " << charDat.size() * 2 << std::endl;
 	foutH << "extern const unsigned short " << name << "Tiles[" << charDat.size() << "];" << std::endl;
 	foutH << std::endl;
@@ -340,7 +339,7 @@ int main(int argc, char** argv)
 	WriteArray<uint16_t>(foutS, charDat);
 	foutS << std::endl;
 
-	// Convert collision map & save it out.
+	// Convert collision map & write it out
 	if (layerCls != nullptr)
 	{
 		std::vector<uint8_t> vucCollisionDat;
@@ -353,7 +352,7 @@ int main(int argc, char** argv)
 			vucCollisionDat.push_back(ucTile);
 		}
 
-		// Try to nicely append "_collision" to the output name.
+		// Try to nicely append "_collision" to the output name
 		std::string path;
 		size_t extPos = p.outPath.find_last_of('.');
 		if (extPos != std::string::npos)
@@ -361,7 +360,7 @@ int main(int argc, char** argv)
 		else
 			path = p.outPath + "_collision";
 
-		// Save it out.
+		// Write collision
 		foutH << "#define " << name << "CollisionLen " << vucCollisionDat.size() << std::endl;
 		foutH << "extern const unsigned char " << name << "Collision[" << vucCollisionDat.size() << "];" << std::endl;
 		foutH << std::endl;
@@ -393,7 +392,7 @@ int main(int argc, char** argv)
 			objDat.push_back((int)(y * 256.0f));
 		}
 
-		// Save it out.
+		// Write objects
 		foutH << "#define " << name << "ObjCount " << objDat.size() / 3 << std::endl;
 		foutH << "#define " << name << "ObjdatLen " << objDat.size() * sizeof(int) << std::endl;
 		foutH << "extern const unsigned int " << name << "Objdat[" << objDat.size() << "];" << std::endl;
