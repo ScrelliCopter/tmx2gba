@@ -1,7 +1,7 @@
-/* tmxobject.cpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
+/* tmxobject.hpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
 
-#ifndef TMXOBJECT_H
-#define TMXOBJECT_H
+#ifndef TMXOBJECT_HPP
+#define TMXOBJECT_HPP
 
 #include <string>
 #include <utility>
@@ -22,4 +22,4 @@ private:
 	float mX, mY;
 };
 
-#endif//TMXOBJECT_H
+#endif//TMXOBJECT_HPP

@@ -1,7 +1,7 @@
 /* tmxreader.hpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
 
-#ifndef TMXREADER_H
-#define TMXREADER_H
+#ifndef TMXREADER_HPP
+#define TMXREADER_HPP
 
 #include <istream>
 #include <vector>
@@ -47,4 +47,4 @@ private:
 
 };
 
-#endif//TMXREADER_H
+#endif//TMXREADER_HPP

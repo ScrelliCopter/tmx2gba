@@ -1,7 +1,7 @@
 /* tmxlayer.hpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
 
-#ifndef TMXLAYER_H
-#define TMXLAYER_H
+#ifndef TMXLAYER_HPP
+#define TMXLAYER_HPP
 
 #include <string>
 #include <cstdint>
@@ -31,4 +31,4 @@ private:
 	uint32_t* mTileDat;
 };
 
-#endif//TMXLAYER_H
+#endif//TMXLAYER_HPP

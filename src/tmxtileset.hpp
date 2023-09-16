@@ -1,7 +1,7 @@
 /* tmxtileset.hpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
 
-#ifndef TMXTILESET_H
-#define TMXTILESET_H
+#ifndef TMXTILESET_HPP
+#define TMXTILESET_HPP
 
 #include <string>
 #include <cstdint>
@@ -26,4 +26,4 @@ private:
 
 };
 
-#endif//TMXTILESET_H
+#endif//TMXTILESET_HPP
