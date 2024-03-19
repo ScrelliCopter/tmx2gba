@@ -33,9 +33,9 @@ namespace ArgParse
 
 	struct Options
 	{
-		const std::vector<const Option> options;
+		const std::vector<Option> options;
 
-		inline constexpr Options(const std::initializer_list<const Option>&& rhs)
+		inline constexpr Options(const std::initializer_list<Option>&& rhs)
 			: options(std::move(rhs)) {}
 
 		void ShowShortUsage(const std::string_view name, std::ostream& out) const;
