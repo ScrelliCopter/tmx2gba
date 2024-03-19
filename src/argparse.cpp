@@ -4,11 +4,12 @@
 #include <iomanip>
 #include <filesystem>
 #include <optional>
+#include <iostream>
 
 
 ArgParse::ArgParser::ArgParser(
 	const std::string_view argv0,
-	std::initializer_list<Option> options,
+	Options options,
 	HandleOption&& handler
 ) noexcept :
 	name(std::filesystem::path(argv0).filename().string()),
@@ -16,7 +17,7 @@ ArgParse::ArgParser::ArgParser(
 	handler(std::forward<HandleOption>(handler)) {}
 
 
-void ArgParse::ArgParser::ShowShortUsage(std::ostream& out) const
+void ArgParse::Options::ShowShortUsage(const std::string_view name, std::ostream& out) const
 {
 	out << "Usage: " << name;
 	for (const auto& it : options)
@@ -39,7 +40,7 @@ void ArgParse::ArgParser::ShowShortUsage(std::ostream& out) const
 	out << std::endl;
 }
 
-void ArgParse::ArgParser::ShowHelpUsage(std::ostream& out) const
+void ArgParse::Options::ShowHelpUsage(const std::string_view name, std::ostream& out) const
 {
 	// Base usage
 	out << "Usage: " << name << " [-";
@@ -56,8 +57,9 @@ void ArgParse::ArgParser::ShowHelpUsage(std::ostream& out) const
 	auto paramLength = [](const Option& p) -> int { return p.argumentName
 		? static_cast<int>(std::strlen(p.argumentName) + 3)
 		: 1; };
-	auto longestParam = std::max(options, [=](auto a, auto b) -> bool { return paramLength(a) < paramLength(b); });
-	auto alignWidth = paramLength(longestParam) + 3;
+	auto longestParam = std::max_element(options.begin(), options.end(),
+		[=](auto a, auto b) -> bool { return paramLength(a) < paramLength(b); });
+	auto alignWidth = paramLength(*longestParam) + 3;
 
 	// print argument descriptions
 	for (const auto& it : options)
@@ -76,7 +78,7 @@ ArgParse::ParseCtrl ArgParse::ParserState::Next(const std::string_view token)
 	auto getFlag = [](const std::string_view s) { return s[0] == '-' && s[1] ? std::optional<int>(s[1]) : std::nullopt; };
 	auto getOption = [&](int flag) -> std::optional<std::reference_wrapper<const Option>>
 	{
-		for (auto& opt : options)
+		for (auto& opt : options.options)
 			if (opt.flag == flag)
 				return std::optional(std::cref(opt));
 		return {};
@@ -119,7 +121,40 @@ ArgParse::ParseCtrl ArgParse::ParserState::Next(const std::string_view token)
 }
 
 
-bool ReadParamFile(std::vector<std::string>& tokens, std::istream& file)
+void ArgParse::ArgParser::DisplayError(const std::string_view message, bool helpPrompt) const
+{
+	std::cerr << GetName() << ": " << message << std::endl;
+	options.ShowShortUsage(GetName(), std::cerr);
+	if (helpPrompt)
+		std::cerr << "Run '" << GetName() << " -h' to view all available options." << std::endl;
+}
+
+bool ArgParse::ArgParser::CheckParse(ArgParse::ParseErr err) const
+{
+	switch (err)
+	{
+	case ParseErr::OK:
+		return true;
+	case ParseErr::OPT_UNKNOWN:
+		DisplayError("Unrecognised option.");
+		return false;
+	case ParseErr::UNEXPECTED:
+		DisplayError("Unexpected token.");
+		return false;
+	case ParseErr::ARG_EXPECTED:
+		DisplayError("Requires an argument.");
+		return false;
+	case ParseErr::ARG_INVALID:
+		DisplayError("Invalid argument.", false);
+		return false;
+	case ParseErr::ARG_RANGE:
+		DisplayError("Argument out of range.", false);
+		return false;
+	}
+}
+
+
+bool ArgParse::ReadParamFile(std::vector<std::string>& tokens, std::istream& file)
 {
 	bool inQuote = false;
 	std::string quoteStr;

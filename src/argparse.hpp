@@ -17,9 +17,29 @@ namespace ArgParse
 	struct Option
 	{
 		char flag;
-		const char* argumentName;
 		bool required;
+		const char* argumentName;
 		const char* helpString;
+
+		static constexpr Option Optional(char flag, const char* name, const char* help)
+		{
+			return { flag, false, name, help };
+		}
+		static constexpr Option Required(char flag, const char* name, const char* help)
+		{
+			return { flag, true, name, help };
+		}
+	};
+
+	struct Options
+	{
+		const std::vector<const Option> options;
+
+		inline constexpr Options(const std::initializer_list<const Option>&& rhs)
+			: options(std::move(rhs)) {}
+
+		void ShowShortUsage(const std::string_view name, std::ostream& out) const;
+		void ShowHelpUsage(const std::string_view name, std::ostream& out) const;
 	};
 
 	enum class ParseCtrl
@@ -50,10 +70,10 @@ namespace ArgParse
 		bool expectArg = false;
 		int flagChar;
 		HandleOption handler;
-		const std::initializer_list<Option>& options;
+		const Options& options;
 
 	public:
-		ParserState(HandleOption handler, const std::initializer_list<Option>& options) noexcept
+		ParserState(HandleOption handler, const Options& options) noexcept
 			: handler(handler), options(options) {}
 		[[nodiscard]] bool ExpectingArg() const { return expectArg; }
 		[[nodiscard]] ParseCtrl Next(const std::string_view token);
@@ -62,49 +82,52 @@ namespace ArgParse
 	class ArgParser
 	{
 		const std::string name;
-		std::initializer_list<Option> options;
+		Options options;
 		HandleOption handler;
 
+		[[nodiscard]] bool CheckParse(ArgParse::ParseErr err) const;
+
 	public:
-		explicit ArgParser(const std::string_view argv0, std::initializer_list<Option> options, HandleOption&& handler) noexcept;
+		explicit ArgParser(const std::string_view argv0, Options options, HandleOption&& handler) noexcept;
 
-		[[nodiscard]] const std::string_view GetName() const { return name; }
-
-		void ShowShortUsage(std::ostream& out) const;
-		void ShowHelpUsage(std::ostream& out) const;
+		[[nodiscard]] const std::string_view GetName() const noexcept { return name; }
+		void DisplayError(const std::string_view message, bool helpPrompt = true) const;
 
 		template <typename V>
-		ParseErr Parse(V args)
+		[[nodiscard]] bool Parse(V args)
 		{
 			ParserState state(handler, options);
 			for (auto arg : args)
 			{
+				ParseErr err;
 				switch (state.Next(arg))
 				{
 				case ParseCtrl::CONTINUE:            continue;
-				case ParseCtrl::QUIT_EARLY:          return ParseErr::OK;
-				case ParseCtrl::QUIT_ERR_UNKNOWN:    return ParseErr::OPT_UNKNOWN;
-				case ParseCtrl::QUIT_ERR_UNEXPECTED: return ParseErr::UNEXPECTED;
-				case ParseCtrl::QUIT_ERR_EXPECTARG:  return ParseErr::ARG_EXPECTED;
-				case ParseCtrl::QUIT_ERR_INVALID:    return ParseErr::ARG_INVALID;
-				case ParseCtrl::QUIT_ERR_RANGE:      return ParseErr::ARG_RANGE;
+				case ParseCtrl::QUIT_EARLY:          err = ParseErr::OK; break;
+				case ParseCtrl::QUIT_ERR_UNKNOWN:    err = ParseErr::OPT_UNKNOWN; break;
+				case ParseCtrl::QUIT_ERR_UNEXPECTED: err = ParseErr::UNEXPECTED; break;
+				case ParseCtrl::QUIT_ERR_EXPECTARG:  err = ParseErr::ARG_EXPECTED; break;
+				case ParseCtrl::QUIT_ERR_INVALID:    err = ParseErr::ARG_INVALID; break;
+				case ParseCtrl::QUIT_ERR_RANGE:      err = ParseErr::ARG_RANGE; break;
 				}
+				if (!CheckParse(err))
+					return false;
 			}
-			return state.ExpectingArg() ? ParseErr::ARG_EXPECTED : ParseErr::OK;
+			return CheckParse(state.ExpectingArg() ? ParseErr::ARG_EXPECTED : ParseErr::OK);
 		}
 
-		inline ParseErr Parse(std::initializer_list<std::string_view> args)
+		[[nodiscard]] inline bool Parse(std::initializer_list<std::string_view> args)
 		{
 			return Parse<std::initializer_list<std::string_view>>(args);
 		}
 
-		inline ParseErr Parse(std::span<char*> args)
+		[[nodiscard]] inline bool Parse(std::span<char*> args)
 		{
 			return Parse(args | std::views::transform([](char const* v){ return std::string_view(v); }));
 		}
 	};
-}
 
-extern bool ReadParamFile(std::vector<std::string>& tokens, std::istream& file);
+	[[nodiscard]] extern bool ReadParamFile(std::vector<std::string>& tokens, std::istream& file);
+}
 
 #endif//ARGPARSE_HPP

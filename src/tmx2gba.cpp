@@ -11,11 +11,6 @@
 #include <algorithm>
 
 
-using ArgParse::ArgParser;
-using ArgParse::ParseCtrl;
-using ArgParse::ParseErr;
-
-
 struct Arguments
 {
 	bool help = false;
@@ -27,54 +22,29 @@ struct Arguments
 	std::vector<std::string> objMappings;
 };
 
-static void DisplayError(const ArgParser& parser, const std::string& message, bool helpPrompt = true)
-{
-	std::cerr << parser.GetName() << ": " << message << std::endl;
-	parser.ShowShortUsage(std::cerr);
-	if (helpPrompt)
-		std::cerr << "Run '" << parser.GetName() << " -h' to view all available options." << std::endl;
-}
+using ArgParse::Option;
 
-bool CheckParse(const ArgParser& parser, ParseErr err)
+static const ArgParse::Options options =
 {
-	switch (err)
-	{
-	case ParseErr::OK:
-		return true;
-	case ParseErr::OPT_UNKNOWN:
-		DisplayError(parser, "Unrecognised option.");
-		return false;
-	case ParseErr::UNEXPECTED:
-		DisplayError(parser, "Unexpected token.");
-		return false;
-	case ParseErr::ARG_EXPECTED:
-		DisplayError(parser, "Requires an argument.");
-		return false;
-	case ParseErr::ARG_INVALID:
-		DisplayError(parser, "Invalid argument.", false);
-		return false;
-	case ParseErr::ARG_RANGE:
-		DisplayError(parser, "Argument out of range.", false);
-		return false;
-	}
-}
+	Option::Optional('h', nullptr,   "Display this help & command info"),
+	Option::Optional('l', "name",    "Name of layer to use (default first layer in TMX)"),
+	Option::Optional('y', "name",    "Layer for palette mappings"),
+	Option::Optional('c', "name",    "Output a separate 8bit collision map of the specified layer"),
+	Option::Optional('r', "offset",  "Offset tile indices (default 0)"),
+	Option::Optional('p', "0-15",    "Select which palette to use for 4-bit tilesets"),
+	Option::Optional('m', "name;id", "Map an object name to an ID, will enable object exports"),
+	Option::Required('i', "inpath",  "Path to input TMX file"),
+	Option::Required('o', "outpath", "Path to output files"),
+	Option::Optional('f', "file",    "Specify a file to use for flags, will override any options"
+	                                 " specified on the command line")
+};
 
 bool ParseArgs(int argc, char** argv, Arguments& params)
 {
-	auto parser = ArgParser(argv[0], {
-		{ 'h', nullptr,   false, "Display this help & command info" },
-		{ 'l', "name",    false, "Name of layer to use (default first layer in TMX)" },
-		{ 'y', "name",    false, "Layer for palette mappings" },
-		{ 'c', "name",    false, "Output a separate 8bit collision map of the specified layer" },
-		{ 'r', "offset",  false, "Offset tile indices (default 0)" },
-		{ 'p', "0-15",    false, "Select which palette to use for 4-bit tilesets" },
-		{ 'm', "name;id", false, "Map an object name to an ID, will enable object exports" },
-		{ 'i', "inpath",  true,  "Path to input TMX file" },
-		{ 'o', "outpath", true,  "Path to output files" },
-		{ 'f', "file",    false, "Specify a file to use for flags, will override any options"
-		                         " specified on the command line" }
-	}, [&](int opt, const std::string_view arg) -> ParseCtrl
+	auto parser = ArgParse::ArgParser(argv[0], options, [&](int opt, const std::string_view arg)
+		-> ArgParse::ParseCtrl
 	{
+		using ArgParse::ParseCtrl;
 		try
 		{
 			switch (opt)
@@ -97,14 +67,11 @@ bool ParseArgs(int argc, char** argv, Arguments& params)
 		catch (std::out_of_range const& e) { return ParseCtrl::QUIT_ERR_RANGE; }
 	});
 
-	if (!CheckParse(parser, parser.Parse(std::span(argv + 1, argc - 1))))
+	if (!parser.Parse(std::span(argv + 1, argc - 1)))
 		return false;
 
 	if (params.help)
-	{
-		parser.ShowHelpUsage(std::cout);
 		return true;
-	}
 
 	if (!params.flagFile.empty())
 	{
@@ -116,30 +83,30 @@ bool ParseArgs(int argc, char** argv, Arguments& params)
 		}
 
 		std::vector<std::string> tokens;
-		if (!ReadParamFile(tokens, paramFile))
+		if (!ArgParse::ReadParamFile(tokens, paramFile))
 		{
 			std::cerr << "Failed to read param file: Unterminated quote string." << std::endl;
 			return false;
 		}
 
-		if (!CheckParse(parser, parser.Parse(tokens)))
+		if (!parser.Parse(tokens))
 			return false;
 	}
 
 	// Check my paranoia
 	if (params.inPath.empty())
 	{
-		DisplayError(parser, "No input file specified.");
+		parser.DisplayError("No input file specified.");
 		return false;
 	}
 	if (params.outPath.empty())
 	{
-		DisplayError(parser, "No output file specified.");
+		parser.DisplayError("No output file specified.");
 		return false;
 	}
 	if (params.palette < 0 || params.palette > 15)
 	{
-		DisplayError(parser, "Invalid palette index.");
+		parser.DisplayError("Invalid palette index.");
 		return false;
 	}
 
@@ -190,7 +157,10 @@ int main(int argc, char** argv)
 	if (!ParseArgs(argc, argv, p))
 		return 1;
 	if (p.help)
+	{
+		options.ShowHelpUsage(argv[0], std::cout);
 		return 0;
+	}
 
 	// Object mappings
 	std::map<std::string, uint32_t> objMapping;
