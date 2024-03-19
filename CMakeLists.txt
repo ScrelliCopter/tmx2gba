@@ -1,12 +1,12 @@
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
 project(tmx2gba)
 
 # Options
 option(TMX2GBA_DKP_INSTALL "Install into DEVKITPRO prefix" OFF)
 option(ASAN "Enable address sanitiser" OFF)
 
-# C++11 & C99
-set(CMAKE_CXX_STANDARD 11)
+# C++20 & C99
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_STANDARD 99)
 
 # Enable strong warnings
@@ -26,7 +26,6 @@ endif()
 add_subdirectory(ext/base64)
 add_subdirectory(ext/miniz)
 add_subdirectory(ext/rapidxml)
-add_subdirectory(ext/ultragetopt)
 
 # Main tmx2gba sources
 add_subdirectory(src)

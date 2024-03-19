@@ -1,31 +1,20 @@
-/* tmx2gba.cpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
+/* tmx2gba.cpp - Copyright (C) 2015-2024 a dinosaur (zlib, see COPYING.txt) */
 
+#include "argparse.hpp"
 #include "tmxreader.hpp"
 #include "tmxlayer.hpp"
 #include "tmxobject.hpp"
 #include <iostream>
 #include <fstream>
-#include <vector>
 #include <map>
-#include <string>
 #include <cstdint>
 #include <algorithm>
-#include <ultragetopt.h>
 
 
-const std::string helpUsage = "Usage: tmx2gba [-h] [-f file] [-r offset] [-lyc name] [-p 0-15] [-m name;id] <-i inpath> <-o outpath>";
-const std::string helpShort = "Run 'tmx2gba -h' to view all available options.";
-const std::string helpFull = R"(
--h ------------ Display this help & command info.
--l <name> ----- Name of layer to use (default first layer in TMX).
--y <name> ----- Layer for palette mappings.
--c <name> ----- Output a separate 8bit collision map of the specified layer.
--r <offset> --- Offset tile indices (default 0).
--p <0-15> ----- Select which palette to use for 4-bit tilesets.
--m <name;id> -- Map an object name to an ID, will enable object exports.
--i <path> ----- Path to input TMX file.
--o <path> ----- Path to output files.
--f <file> ----- Specify a file to use for flags, will override any options specified on the command line.)";
+using ArgParse::ArgParser;
+using ArgParse::ParseCtrl;
+using ArgParse::ParseErr;
+
 
 struct Arguments
 {
@@ -36,67 +25,126 @@ struct Arguments
 	int offset = 0;
 	int palette = 0;
 	std::vector<std::string> objMappings;
-	bool objExport = false;
 };
 
-void ParseArgs(int argc, char** argv, Arguments& p)
+static void DisplayError(const ArgParser& parser, const std::string& message, bool helpPrompt = true)
 {
-	int opt;
-	optreset = 1;
-	while ((opt = getopt(argc, argv, "hr:l:c:p:y:m:i:o:f:")) > 0)
+	std::cerr << parser.GetName() << ": " << message << std::endl;
+	parser.ShowShortUsage(std::cerr);
+	if (helpPrompt)
+		std::cerr << "Run '" << parser.GetName() << " -h' to view all available options." << std::endl;
+}
+
+bool CheckParse(const ArgParser& parser, ParseErr err)
+{
+	switch (err)
 	{
-		switch (opt)
-		{
-		case ('h'):
-			p.help = true;
-			return;
-
-		case ('l'): p.layer = optarg; break;
-		case ('c'): p.collisionlay = optarg; break;
-		case ('y'): p.paletteLay = optarg; break;
-		case ('r'): p.offset = std::stoi(optarg); break;
-		case ('p'): p.palette = std::stoi(optarg); break;
-
-		case ('m'):
-			p.objExport = true;
-			p.objMappings.emplace_back(optarg);
-			break;
-
-		case ('i'): p.inPath = optarg; break;
-		case ('o'): p.outPath = optarg; break;
-		case ('f'): p.flagFile = optarg; break;
-
-		default:
-			break;
-		}
+	case ParseErr::OK:
+		return true;
+	case ParseErr::OPT_UNKNOWN:
+		DisplayError(parser, "Unrecognised option.");
+		return false;
+	case ParseErr::UNEXPECTED:
+		DisplayError(parser, "Unexpected token.");
+		return false;
+	case ParseErr::ARG_EXPECTED:
+		DisplayError(parser, "Requires an argument.");
+		return false;
+	case ParseErr::ARG_INVALID:
+		DisplayError(parser, "Invalid argument.", false);
+		return false;
+	case ParseErr::ARG_RANGE:
+		DisplayError(parser, "Argument out of range.", false);
+		return false;
 	}
 }
 
-bool CheckArgs(const Arguments& params)
+bool ParseArgs(int argc, char** argv, Arguments& params)
 {
+	auto parser = ArgParser(argv[0], {
+		{ 'h', nullptr,   false, "Display this help & command info" },
+		{ 'l', "name",    false, "Name of layer to use (default first layer in TMX)" },
+		{ 'y', "name",    false, "Layer for palette mappings" },
+		{ 'c', "name",    false, "Output a separate 8bit collision map of the specified layer" },
+		{ 'r', "offset",  false, "Offset tile indices (default 0)" },
+		{ 'p', "0-15",    false, "Select which palette to use for 4-bit tilesets" },
+		{ 'm', "name;id", false, "Map an object name to an ID, will enable object exports" },
+		{ 'i', "inpath",  true,  "Path to input TMX file" },
+		{ 'o', "outpath", true,  "Path to output files" },
+		{ 'f', "file",    false, "Specify a file to use for flags, will override any options"
+		                         " specified on the command line" }
+	}, [&](int opt, const std::string_view arg) -> ParseCtrl
+	{
+		try
+		{
+			switch (opt)
+			{
+			case 'h': params.help = true;        return ParseCtrl::QUIT_EARLY;
+			case 'l': params.layer = arg;        return ParseCtrl::CONTINUE;
+			case 'c': params.collisionlay = arg; return ParseCtrl::CONTINUE;
+			case 'y': params.paletteLay = arg;   return ParseCtrl::CONTINUE;
+			case 'r': params.offset = std::stoi(std::string(arg));  return ParseCtrl::CONTINUE;
+			case 'p': params.palette = std::stoi(std::string(arg)); return ParseCtrl::CONTINUE;
+			case 'm': params.objMappings.emplace_back(arg);         return ParseCtrl::CONTINUE;
+			case 'i': params.inPath = arg;       return ParseCtrl::CONTINUE;
+			case 'o': params.outPath = arg;      return ParseCtrl::CONTINUE;
+			case 'f': params.flagFile = arg;     return ParseCtrl::CONTINUE;
+
+			default: return ParseCtrl::QUIT_ERR_UNKNOWN;
+			}
+		}
+		catch (std::invalid_argument const& e) { return ParseCtrl::QUIT_ERR_INVALID; }
+		catch (std::out_of_range const& e) { return ParseCtrl::QUIT_ERR_RANGE; }
+	});
+
+	if (!CheckParse(parser, parser.Parse(std::span(argv + 1, argc - 1))))
+		return false;
+
+	if (params.help)
+	{
+		parser.ShowHelpUsage(std::cout);
+		return true;
+	}
+
+	if (!params.flagFile.empty())
+	{
+		std::ifstream paramFile(params.flagFile);
+		if (!paramFile.is_open())
+		{
+			std::cerr << "Failed to open param file." << std::endl;
+			return false;
+		}
+
+		std::vector<std::string> tokens;
+		if (!ReadParamFile(tokens, paramFile))
+		{
+			std::cerr << "Failed to read param file: Unterminated quote string." << std::endl;
+			return false;
+		}
+
+		if (!CheckParse(parser, parser.Parse(tokens)))
+			return false;
+	}
+
 	// Check my paranoia
 	if (params.inPath.empty())
 	{
-		std::cerr << "No input file specified." << std::endl;
-		std::cout << helpUsage << std::endl << helpShort << std::endl;
+		DisplayError(parser, "No input file specified.");
 		return false;
 	}
 	if (params.outPath.empty())
 	{
-		std::cerr << "No output file specified." << std::endl;
-		std::cout << helpUsage << std::endl << helpShort << std::endl;
+		DisplayError(parser, "No output file specified.");
 		return false;
 	}
 	if (params.palette < 0 || params.palette > 15)
 	{
-		std::cerr << "Invalid palette index." << std::endl;
-		std::cout << helpUsage << std::endl << helpShort << std::endl;
+		DisplayError(parser, "Invalid palette index.");
 		return false;
 	}
 
 	return true;
 }
-
 
 template <typename T> constexpr const char* DatType();
 template <> constexpr const char* DatType<uint8_t>() { return ".byte"; }
@@ -139,84 +187,14 @@ void WriteArray(std::ofstream& aOut, const std::vector<T>& aDat, int aPerCol = 1
 int main(int argc, char** argv)
 {
 	Arguments p;
-	ParseArgs(argc, argv, p);
-
+	if (!ParseArgs(argc, argv, p))
+		return 1;
 	if (p.help)
-	{
-		std::cout << helpUsage << std::endl << helpFull << std::endl;
 		return 0;
-	}
-
-	if (!p.flagFile.empty())
-	{
-		std::ifstream paramFile(p.flagFile);
-		if (!paramFile.is_open())
-		{
-			std::cerr << "Failed to open param file." << std::endl;
-			return -1;
-		}
-		
-		std::vector<std::string> fileArgTokens;
-		fileArgTokens.push_back("auu~~");
-		bool carry = false;
-		std::string rawToken;
-		while (!paramFile.eof())
-		{
-			if (carry)
-			{
-				std::string tmp;
-				paramFile >> tmp;
-				rawToken += " ";
-				rawToken += tmp;
-			}
-			else
-			{
-				rawToken.clear();
-				paramFile >> rawToken;
-			}
-
-			if (rawToken.empty())
-				continue;
-
-			bool qFr = rawToken[0] == '"';
-			bool qBk = rawToken[rawToken.length() - 1] == '"';
-			if (qFr && qBk)
-			{
-				fileArgTokens.push_back(rawToken.substr(1, rawToken.length() - 2));
-			}
-			else
-			if (qFr)
-			{
-				fileArgTokens.push_back(rawToken.substr(1, rawToken.length() - 1));
-				carry = true;
-			}
-			else
-			if (qBk)
-			{
-				fileArgTokens.push_back(rawToken.substr(0, rawToken.length() - 1));
-				carry = false;
-			}
-			else
-			{
-				fileArgTokens.push_back(rawToken);
-			}
-		}
-
-		std::vector<const char*> fileArgs;
-		fileArgs.reserve(fileArgTokens.size());
-		for (const auto& token : fileArgTokens)
-			fileArgs.push_back(token.c_str());
-		fileArgs.push_back(nullptr);
-
-		ParseArgs(static_cast<int>(fileArgs.size()) - 1, (char**)fileArgs.data(), p);
-	}
-
-	if (!CheckArgs(p))
-		return -1;
 
 	// Object mappings
 	std::map<std::string, uint32_t> objMapping;
-	if (p.objExport)
+	if (!p.objMappings.empty())
 	{
 		for (const auto& objToken : p.objMappings)
 		{
@@ -375,7 +353,7 @@ int main(int argc, char** argv)
 		foutS << std::endl;
 	}
 
-	if (p.objExport)
+	if (!p.objMappings.empty())
 	{
 		std::vector<uint32_t> objDat;
 		for (size_t i = 0; i < tmx.GetObjectCount(); ++i)

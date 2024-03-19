@@ -1,14 +1,15 @@
-add_executable(tmx2gba 
-	tmx2gba.cpp
+add_executable(tmx2gba
+	argparse.hpp argparse.cpp
 	tmxlayer.hpp
 	tmxobject.hpp
 	tmxreader.hpp tmxreader.cpp
-	tmxtileset.hpp)
+	tmxtileset.hpp
+	tmx2gba.cpp)
+
 target_link_libraries(tmx2gba
 	External::base64
 	External::miniz
-	External::rapidxml
-	External::ultragetopt)
+	External::rapidxml)
 
 if (TMX2GBA_DKP_INSTALL)
 	if (DEFINED ENV{DEVKITPRO})

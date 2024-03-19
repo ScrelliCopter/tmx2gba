@@ -75,7 +75,7 @@ void TmxReader::ReadTileset(rapidxml::xml_node<>* aXNode)
 	// Read first global ID
 	xAttrib = aXNode->first_attribute("firstgid");
 	if (xAttrib != nullptr)
-		firstGid = std::stoul(xAttrib->value());
+		firstGid = static_cast<uint32_t>(std::stoul(xAttrib->value()));
 
 	mTilesets.push_back(new TmxTileset(name, source, firstGid));
 }
