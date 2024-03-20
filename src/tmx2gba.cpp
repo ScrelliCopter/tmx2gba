@@ -4,10 +4,10 @@
 #include "tmxreader.hpp"
 #include "tmxlayer.hpp"
 #include "tmxobject.hpp"
+#include "headerwriter.hpp"
+#include "swriter.hpp"
 #include <iostream>
-#include <fstream>
 #include <map>
-#include <cstdint>
 #include <algorithm>
 
 
@@ -118,44 +118,6 @@ bool ParseArgs(int argc, char** argv, Arguments& params)
 }
 
 
-template <typename T> constexpr const char* DatType();
-template <> constexpr const char* DatType<uint8_t>() { return ".byte"; }
-template <> constexpr const char* DatType<uint16_t>() { return ".hword"; }
-template <> constexpr const char* DatType<uint32_t>() { return ".word"; }
-
-template <typename T>
-void WriteArray(std::ofstream& aOut, const std::vector<T>& aDat, int aPerCol = 16)
-{
-	int col = 0;
-
-	aOut.setf(std::ios::hex, std::ios::basefield);
-	aOut.setf(std::ios::showbase);
-
-	size_t i = 0;
-	for (T element : aDat)
-	{
-		if (col == 0)
-			aOut << "\t" << DatType<T>() << " ";
-
-		aOut << std::hex << (int)element;
-
-		if (i < aDat.size() - 1)
-		{
-			if (++col < aPerCol)
-			{
-				aOut << ",";
-			}
-			else
-			{
-				aOut << "" << std::endl;
-				col = 0;
-			}
-		}
-
-		++i;
-	}
-}
-
 int main(int argc, char** argv)
 {
 	Arguments p;
@@ -182,7 +144,7 @@ int main(int argc, char** argv)
 			if (splitter == std::string::npos)
 			{
 				std::cerr << "Malformed mapping (missing a splitter)." << std::endl;
-				return -1;
+				return 1;
 			}
 
 			try
@@ -205,7 +167,7 @@ int main(int argc, char** argv)
 	if (!fin.is_open())
 	{
 		std::cerr << "Failed to open input file." << std::endl;
-		return -1;
+		return 1;
 	}
 	tmx.Open(fin);
 
@@ -213,7 +175,7 @@ int main(int argc, char** argv)
 	if (tmx.GetLayerCount() == 0)
 	{
 		std::cerr << "No layers found." << std::endl;
-		return -1;
+		return 1;
 	}
 	const TmxLayer* layerGfx = p.layer.empty()
 		? tmx.GetLayer(0)
@@ -228,33 +190,28 @@ int main(int argc, char** argv)
 	if (layerGfx == nullptr)
 	{
 		std::cerr << "Input layer not found." << std::endl;
-		return -1;
+		return 1;
 	}
 
-	// Open output files
-	std::ofstream foutS(p.outPath + ".s");
-	std::ofstream foutH(p.outPath + ".h");
-	if (!foutS.is_open() || !foutH.is_open())
-	{
-		std::cerr << "Failed to create output file(s).";
-		return -1;
-	}
-
+	// Get name from file
+	//TODO: properly sanitise
 	int slashPos = std::max((int)p.outPath.find_last_of('/'), (int)p.outPath.find_last_of('\\'));
 	std::string name = p.outPath;
 	if (slashPos != -1)
 		name = name.substr(slashPos + 1);
 
-	// Write header guards
-	std::string guard = "TMX2GBA_" + name;
-	for (auto& c: guard)
-		c = static_cast<char>(toupper(c));
-	foutH << "#ifndef " << guard << std::endl;
-	foutH << "#define " << guard << std::endl;
-	foutH << std::endl;
-	foutH << "#define " << name << "Width " << tmx.GetWidth() << std::endl;
-	foutH << "#define " << name << "Height " << tmx.GetHeight() << std::endl;
-	foutH << std::endl;
+	// Open output files
+	SWriter outS; HeaderWriter outH;
+	if (!outS.Open(p.outPath + ".s"))
+	{
+		std::cerr << "Failed to create output file \"" << p.outPath << ".s\".";
+		return 1;
+	}
+	if (!outH.Open(p.outPath + ".h", name))
+	{
+		std::cerr << "Failed to create output file \"" << p.outPath << ".h\".";
+		return 1;
+	}
 
 	// Convert to GBA-friendly charmap data
 	const uint32_t* gfxTiles = layerGfx->GetData();
@@ -285,29 +242,21 @@ int main(int argc, char** argv)
 	}
 
 	// Write out charmap
-	foutH << "#define " << name << "TilesLen " << charDat.size() * 2 << std::endl;
-	foutH << "extern const unsigned short " << name << "Tiles[" << charDat.size() << "];" << std::endl;
-	foutH << std::endl;
-
-	foutS << "\t.section .rodata" << std::endl;
-	foutS << "\t.align 2" << std::endl;
-	foutS << "\t.global " << name << "Tiles" << std::endl;
-	foutS << "\t.hidden " << name << "Tiles" << std::endl;
-	foutS << name << "Tiles" << ":" << std::endl;
-	WriteArray<uint16_t>(foutS, charDat);
-	foutS << std::endl;
+	outH.WriteSize(tmx.GetWidth(), tmx.GetHeight());
+	outH.WriteCharacterMap(charDat);
+	outS.WriteArray("Tiles", charDat);
 
 	// Convert collision map & write it out
 	if (layerCls != nullptr)
 	{
-		std::vector<uint8_t> vucCollisionDat;
-		vucCollisionDat.reserve(layerCls->GetWidth() * layerCls->GetHeight());
+		std::vector<uint8_t> collisionDat;
+		collisionDat.reserve(layerCls->GetWidth() * layerCls->GetHeight());
 
 		gfxTiles = layerCls->GetData();
 		for (int i = 0; i < layerCls->GetWidth() * layerCls->GetHeight(); ++i)
 		{
 			uint8_t ucTile = (uint8_t)tmx.LidFromGid((*gfxTiles++) & ~TmxLayer::FLIP_MASK);
-			vucCollisionDat.push_back(ucTile);
+			collisionDat.push_back(ucTile);
 		}
 
 		// Try to nicely append "_collision" to the output name
@@ -319,18 +268,8 @@ int main(int argc, char** argv)
 			path = p.outPath + "_collision";
 
 		// Write collision
-		foutH << "#define " << name << "CollisionLen " << vucCollisionDat.size() << std::endl;
-		foutH << "extern const unsigned char " << name << "Collision[" << vucCollisionDat.size() << "];" << std::endl;
-		foutH << std::endl;
-
-		foutS << std::endl;
-		foutS << "\t.section .rodata" << std::endl;
-		foutS << "\t.align 2" << std::endl;
-		foutS << "\t.global " << name << "Collision" << std::endl;
-		foutS << "\t.hidden " << name << "Collision" << std::endl;
-		foutS << name << "Collision" << ":" << std::endl;
-		WriteArray<uint8_t>(foutS, vucCollisionDat);
-		foutS << std::endl;
+		outH.WriteCollision(collisionDat);
+		outS.WriteArray("Collision", collisionDat);
 	}
 
 	if (!p.objMappings.empty())
@@ -351,25 +290,9 @@ int main(int argc, char** argv)
 		}
 
 		// Write objects
-		foutH << "#define " << name << "ObjCount " << objDat.size() / 3 << std::endl;
-		foutH << "#define " << name << "ObjdatLen " << objDat.size() * sizeof(int) << std::endl;
-		foutH << "extern const unsigned int " << name << "Objdat[" << objDat.size() << "];" << std::endl;
-		foutH << std::endl;
-
-		foutS << std::endl;
-		foutS << "\t.section .rodata" << std::endl;
-		foutS << "\t.align 2" << std::endl;
-		foutS << "\t.global " << name << "Objdat" << std::endl;
-		foutS << "\t.hidden " << name << "Objdat" << std::endl;
-		foutS << name << "Objdat" << ":" << std::endl;
-		WriteArray<uint32_t>(foutS, objDat);
-		foutS << std::endl;
+		outH.WriteObjects(objDat);
+		outS.WriteArray("Objdat", objDat);
 	}
-
-	foutH << "#endif//" << guard << std::endl;
-
-	foutH.close();
-	foutS.close();
 
 	return 0;
 }

@@ -4,6 +4,8 @@ add_executable(tmx2gba
 	tmxobject.hpp
 	tmxreader.hpp tmxreader.cpp
 	tmxtileset.hpp
+	swriter.hpp
+	headerwriter.hpp headerwriter.cpp
 	tmx2gba.cpp)
 
 target_link_libraries(tmx2gba
