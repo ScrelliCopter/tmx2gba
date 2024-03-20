@@ -15,8 +15,10 @@
 
 const std::string helpUsage = "Usage: tmx2gba [-h] [-f file] [-r offset] [-lyc name] [-p 0-15] [-m name;id] <-i inpath> <-o outpath>";
 const std::string helpShort = "Run 'tmx2gba -h' to view all available options.";
+const std::string versionStr = "tmx2gba version 0.3, (c) 2015-2022 a dinosaur";
 const std::string helpFull = R"(
 -h ------------ Display this help & command info.
+-v ------------ Display version & quit.
 -l <name> ----- Name of layer to use (default first layer in TMX).
 -y <name> ----- Layer for palette mappings.
 -c <name> ----- Output a separate 8bit collision map of the specified layer.
@@ -29,7 +31,7 @@ const std::string helpFull = R"(
 
 struct Arguments
 {
-	bool help = false;
+	bool help = false, showVersion = false;
 	std::string inPath, outPath;
 	std::string layer, collisionlay, paletteLay;
 	std::string flagFile;
@@ -43,12 +45,15 @@ void ParseArgs(int argc, char** argv, Arguments& p)
 {
 	int opt;
 	optreset = 1;
-	while ((opt = getopt(argc, argv, "hr:l:c:p:y:m:i:o:f:")) > 0)
+	while ((opt = getopt(argc, argv, "hvr:l:c:p:y:m:i:o:f:")) > 0)
 	{
 		switch (opt)
 		{
 		case ('h'):
 			p.help = true;
+			return;
+		case ('v'):
+			p.showVersion = true;
 			return;
 
 		case ('l'): p.layer = optarg; break;
@@ -146,6 +151,11 @@ int main(int argc, char** argv)
 		std::cout << helpUsage << std::endl << helpFull << std::endl;
 		return 0;
 	}
+	if (p.showVersion)
+	{
+		std::cout << versionStr << std::endl;
+		return 0;
+	}
 
 	if (!p.flagFile.empty())
 	{
@@ -155,7 +165,7 @@ int main(int argc, char** argv)
 			std::cerr << "Failed to open param file." << std::endl;
 			return -1;
 		}
-		
+
 		std::vector<std::string> fileArgTokens;
 		fileArgTokens.push_back("auu~~");
 		bool carry = false;
