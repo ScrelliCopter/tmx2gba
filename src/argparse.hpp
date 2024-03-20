@@ -35,8 +35,7 @@ namespace ArgParse
 	{
 		const std::vector<Option> options;
 
-		inline Options(const std::initializer_list<Option>&& rhs)
-			: options(std::move(rhs)) {}
+		inline Options(const std::initializer_list<Option>&& rhs) : options(rhs) {}
 
 		void ShowShortUsage(const std::string_view name, std::ostream& out) const;
 		void ShowHelpUsage(const std::string_view name, std::ostream& out) const;
@@ -99,7 +98,7 @@ namespace ArgParse
 			ParserState state(handler, options);
 			for (auto arg : args)
 			{
-				ParseErr err;
+				ParseErr err = ParseErr::UNEXPECTED;
 				switch (state.Next(arg))
 				{
 				case ParseCtrl::CONTINUE:            continue;

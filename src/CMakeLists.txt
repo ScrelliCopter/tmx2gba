@@ -8,6 +8,17 @@ add_executable(tmx2gba
 	headerwriter.hpp headerwriter.cpp
 	tmx2gba.cpp)
 
+set_target_properties(tmx2gba PROPERTIES
+	# C++20 & C99
+	CXX_STANDARD 20
+	C_STANDARD 99)
+
+# Enable strong warnings
+target_compile_options(tmx2gba PRIVATE
+	$<$<CXX_COMPILER_ID:MSVC>:/Wall>
+	$<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -pedantic>
+	$<$<CXX_COMPILER_ID:Clang,AppleClang>:-Weverything>)
+
 target_link_libraries(tmx2gba
 	External::base64
 	External::miniz

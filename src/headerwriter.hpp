@@ -10,6 +10,7 @@
 #include <span>
 #include <concepts>
 #include <fstream>
+#include <filesystem>
 
 template <typename T>
 concept NumericType = std::integral<T> || std::floating_point<T>;
@@ -17,7 +18,7 @@ concept NumericType = std::integral<T> || std::floating_point<T>;
 class HeaderWriter
 {
 	std::ofstream stream;
-	std::string name;
+	std::string mName;
 
 	void WriteGuardStart();
 	void WriteGuardEnd();
@@ -25,7 +26,7 @@ class HeaderWriter
 public:
 	~HeaderWriter();
 
-	[[nodiscard]] bool Open(const std::string_view path, const std::string_view name);
+	[[nodiscard]] bool Open(const std::filesystem::path& path, const std::string_view name);
 
 	void WriteDefine(const std::string_view name, const std::string_view value);
 	void WriteSymbol(const std::string_view name, const std::string_view type, std::size_t count);

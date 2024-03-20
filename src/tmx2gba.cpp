@@ -67,8 +67,8 @@ bool ParseArgs(int argc, char** argv, Arguments& params)
 			default: return ParseCtrl::QUIT_ERR_UNKNOWN;
 			}
 		}
-		catch (std::invalid_argument const& e) { return ParseCtrl::QUIT_ERR_INVALID; }
-		catch (std::out_of_range const& e) { return ParseCtrl::QUIT_ERR_RANGE; }
+		catch (std::invalid_argument const&) { return ParseCtrl::QUIT_ERR_INVALID; }
+		catch (std::out_of_range const&) { return ParseCtrl::QUIT_ERR_RANGE; }
 	});
 
 	if (!parser.Parse(std::span(argv + 1, argc - 1)))

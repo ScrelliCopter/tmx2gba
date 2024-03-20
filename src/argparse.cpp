@@ -151,6 +151,8 @@ bool ArgParse::ArgParser::CheckParse(ArgParse::ParseErr err) const
 	case ParseErr::ARG_RANGE:
 		DisplayError("Argument out of range.", false);
 		return false;
+	default:
+		return false;
 	}
 }
 
@@ -207,7 +209,7 @@ bool ArgParse::ReadParamFile(std::vector<std::string>& tokens, std::istream& fil
 			}
 			else
 			{
-				quoteStr.push_back(c);
+				quoteStr.push_back(static_cast<char>(c));
 			}
 		}
 	}

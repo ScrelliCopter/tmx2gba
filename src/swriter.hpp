@@ -10,15 +10,18 @@
 #include <fstream>
 #include <vector>
 
+namespace GccIsDumb
+{
+	template <typename T> constexpr const char* DatType();
+	template <> constexpr const char* DatType<uint8_t>() { return ".byte"; }
+	template <> constexpr const char* DatType<uint16_t>() { return ".hword"; }
+	template <> constexpr const char* DatType<uint32_t>() { return ".word"; }
+}
+
 class SWriter
 {
 	std::ofstream stream;
 	int writes = 0;
-
-	template <typename T> static constexpr const char* DatType();
-	template <> constexpr const char* DatType<uint8_t>() { return ".byte"; }
-	template <> constexpr const char* DatType<uint16_t>() { return ".hword"; }
-	template <> constexpr const char* DatType<uint32_t>() { return ".word"; }
 
 	template <typename T>
 	static void WriteArray(std::ostream& aOut, const std::vector<T>& aDat, int aPerCol = 16)
@@ -32,7 +35,7 @@ class SWriter
 		for (T element : aDat)
 		{
 			if (col == 0)
-				aOut << "\t" << DatType<T>() << " ";
+				aOut << "\t" << GccIsDumb::DatType<T>() << " ";
 
 			aOut << std::hex << (int)element;
 
@@ -54,7 +57,7 @@ class SWriter
 	}
 
 public:
-	[[nodiscard]] bool Open(const std::string_view path)
+	[[nodiscard]] bool Open(const std::filesystem::path& path)
 	{
 		stream.open(path);
 		return stream.is_open();
