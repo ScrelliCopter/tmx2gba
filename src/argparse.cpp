@@ -1,9 +1,10 @@
 /* argparse.cpp - Copyright (C) 2024 a dinosaur (zlib, see COPYING.txt) */
 
 #include "argparse.hpp"
-#include <iomanip>
-#include <filesystem>
 #include <optional>
+#include <cstring>
+#include <filesystem>
+#include <iomanip>
 #include <iostream>
 
 
