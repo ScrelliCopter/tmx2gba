@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-project(tmx2gba)
+cmake_minimum_required(VERSION "3.12" FATAL_ERROR)
+project(tmx2gba VERSION "0.3")
 
 # Options
 option(TMX2GBA_DKP_INSTALL "Install into DEVKITPRO prefix" OFF)

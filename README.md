@@ -20,6 +20,7 @@ tmx2gba [-h] [-r offset] [-lyc name] [-p 0-15] <-i inpath> <-o outpath>
 | Command      | Required | Notes                                                                 |
 |--------------|----------|-----------------------------------------------------------------------|
 | -h           | N/A      | Display help & command info.                                          |
+| -v           | No       | Display version & quit.                                               |
 | -l (name)    | No       | Name of layer to use (default first layer in TMX).                    |
 | -y (name)    | No       | Layer for palette mappings.                                           |
 | -c (name)    | No       | Output a separate 8bit collision map of the specified layer.          |

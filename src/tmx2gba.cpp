@@ -11,9 +11,11 @@
 #include <algorithm>
 
 
+const std::string versionStr = "tmx2gba version 0.3, (c) 2015-2022 a dinosaur";
+
 struct Arguments
 {
-	bool help = false;
+	bool help = false, showVersion = false;
 	std::string inPath, outPath;
 	std::string layer, collisionlay, paletteLay;
 	std::string flagFile;
@@ -27,6 +29,7 @@ using ArgParse::Option;
 static const ArgParse::Options options =
 {
 	Option::Optional('h', nullptr,   "Display this help & command info"),
+	Option::Optional('v', nullptr,   "Display version & quit"),
 	Option::Optional('l', "name",    "Name of layer to use (default first layer in TMX)"),
 	Option::Optional('y', "name",    "Layer for palette mappings"),
 	Option::Optional('c', "name",    "Output a separate 8bit collision map of the specified layer"),
@@ -50,6 +53,7 @@ bool ParseArgs(int argc, char** argv, Arguments& params)
 			switch (opt)
 			{
 			case 'h': params.help = true;        return ParseCtrl::QUIT_EARLY;
+			case 'v': params.showVersion = true; return ParseCtrl::QUIT_EARLY;
 			case 'l': params.layer = arg;        return ParseCtrl::CONTINUE;
 			case 'c': params.collisionlay = arg; return ParseCtrl::CONTINUE;
 			case 'y': params.paletteLay = arg;   return ParseCtrl::CONTINUE;
@@ -70,7 +74,7 @@ bool ParseArgs(int argc, char** argv, Arguments& params)
 	if (!parser.Parse(std::span(argv + 1, argc - 1)))
 		return false;
 
-	if (params.help)
+	if (params.help || params.showVersion)
 		return true;
 
 	if (!params.flagFile.empty())
@@ -112,6 +116,7 @@ bool ParseArgs(int argc, char** argv, Arguments& params)
 
 	return true;
 }
+
 
 template <typename T> constexpr const char* DatType();
 template <> constexpr const char* DatType<uint8_t>() { return ".byte"; }
@@ -159,6 +164,11 @@ int main(int argc, char** argv)
 	if (p.help)
 	{
 		options.ShowHelpUsage(argv[0], std::cout);
+		return 0;
+	}
+	if (p.showVersion)
+	{
+		std::cout << versionStr << std::endl;
 		return 0;
 	}
 
