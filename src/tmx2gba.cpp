@@ -204,7 +204,7 @@ int main(int argc, char** argv)
 
 	// Open output files
 	SWriter outS; HeaderWriter outH;
-	if (!outS.Open(p.outPath + ".s"))
+	if (!outS.Open(p.outPath + ".s", name))
 	{
 		std::cerr << "Failed to create output file \"" << p.outPath << ".s\".";
 		return 1;
@@ -219,13 +219,13 @@ int main(int argc, char** argv)
 	const uint32_t* gfxTiles = layerGfx->GetData();
 	const uint32_t* palTiles = (layerPal == nullptr) ? nullptr : layerPal->GetData();
 	std::vector<uint16_t> charDat;
-	size_t numTiles = static_cast<size_t>(layerGfx->GetWidth()) * static_cast<size_t>(layerGfx->GetHeight());
+	const size_t numTiles = static_cast<size_t>(layerGfx->GetWidth()) * static_cast<size_t>(layerGfx->GetHeight());
 	charDat.reserve(numTiles);
 	for (size_t i = 0; i < numTiles; ++i)
 	{
 		uint32_t read = (*gfxTiles++);
 
-		uint16_t tile = std::max<uint16_t>(0, tmx.LidFromGid(read & ~TmxLayer::FLIP_MASK) + p.offset);
+		uint16_t tile = std::max(0, static_cast<int>(tmx.LidFromGid(read & ~TmxLayer::FLIP_MASK)) + p.offset);
 		uint8_t flags = 0x0;
 
 		// Get flipped!
@@ -271,7 +271,7 @@ int main(int argc, char** argv)
 
 		// Write collision
 		outH.WriteCollision(collisionDat);
-		outS.WriteArray("Collision", collisionDat);
+		outS.WriteArray("Collision", collisionDat, 32);
 	}
 
 	if (!p.objMappings.empty())
