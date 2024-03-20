@@ -37,7 +37,7 @@ class SWriter
 			if (col == 0)
 				aOut << "\t" << GccIsDumb::DatType<T>() << " ";
 
-			aOut << std::hex << (int)element;
+			aOut << std::hex << static_cast<int>(element);
 
 			if (i < aDat.size() - 1)
 			{

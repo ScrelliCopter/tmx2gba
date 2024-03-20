@@ -16,18 +16,18 @@ namespace ArgParse
 {
 	struct Option
 	{
-		char flag;
-		bool required;
 		const char* argumentName;
 		const char* helpString;
+		char flag;
+		bool required;
 
 		static constexpr Option Optional(char flag, const char* name, const char* help)
 		{
-			return { flag, false, name, help };
+			return { name, help, flag, false };
 		}
 		static constexpr Option Required(char flag, const char* name, const char* help)
 		{
-			return { flag, true, name, help };
+			return { name, help, flag, false };
 		}
 	};
 
@@ -66,10 +66,10 @@ namespace ArgParse
 
 	class ParserState
 	{
-		bool expectArg = false;
-		int flagChar;
 		HandleOption handler;
 		const Options& options;
+		int flagChar;
+		bool expectArg = false;
 
 	public:
 		ParserState(HandleOption handler, const Options& options) noexcept

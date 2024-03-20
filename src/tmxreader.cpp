@@ -43,7 +43,7 @@ bool TmxReader::DecodeMap(uint32_t* aOut, size_t aOutSize, const std::string& aB
 	// Decompress compressed data
 	auto dstSize = static_cast<mz_ulong>(aOutSize);
 	int res = uncompress(
-		(unsigned char*)aOut,
+		reinterpret_cast<unsigned char*>(aOut),
 		&dstSize,
 		reinterpret_cast<const unsigned char*>(decoded.data()),
 		static_cast<mz_ulong>(decoded.size()));
@@ -172,7 +172,7 @@ void TmxReader::Open(std::istream& aIn)
 
 	// Parse document
 	rapidxml::xml_document<> xDoc;
-	xDoc.parse<0>((char*)strXml.c_str());
+	xDoc.parse<0>(const_cast<char*>(strXml.c_str()));
 
 	// Get map node
 	auto xMap = xDoc.first_node("map");

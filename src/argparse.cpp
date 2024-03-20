@@ -151,8 +151,6 @@ bool ArgParse::ArgParser::CheckParse(ArgParse::ParseErr err) const
 	case ParseErr::ARG_RANGE:
 		DisplayError("Argument out of range.", false);
 		return false;
-	default:
-		return false;
 	}
 }
 

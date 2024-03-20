@@ -23,7 +23,6 @@ private:
 	std::string mName;
 	std::string mSource;
 	uint32_t mFirstGid;
-
 };
 
 #endif//TMXTILESET_HPP

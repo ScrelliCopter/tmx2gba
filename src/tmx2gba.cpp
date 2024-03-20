@@ -11,7 +11,7 @@
 #include <algorithm>
 
 
-const std::string versionStr = "tmx2gba version 0.3, (c) 2015-2022 a dinosaur";
+static const char* versionStr = "tmx2gba version 0.3, (c) 2015-2022 a dinosaur";
 
 struct Arguments
 {
@@ -195,7 +195,9 @@ int main(int argc, char** argv)
 
 	// Get name from file
 	//TODO: properly sanitise
-	int slashPos = std::max((int)p.outPath.find_last_of('/'), (int)p.outPath.find_last_of('\\'));
+	int slashPos = std::max(
+		static_cast<int>(p.outPath.find_last_of('/')),
+		static_cast<int>(p.outPath.find_last_of('\\')));
 	std::string name = p.outPath;
 	if (slashPos != -1)
 		name = name.substr(slashPos + 1);
@@ -223,7 +225,7 @@ int main(int argc, char** argv)
 	{
 		uint32_t read = (*gfxTiles++);
 
-		uint16_t tile = (uint16_t)std::max<int32_t>(0, tmx.LidFromGid(read & ~TmxLayer::FLIP_MASK) + p.offset);
+		uint16_t tile = std::max<uint16_t>(0, tmx.LidFromGid(read & ~TmxLayer::FLIP_MASK) + p.offset);
 		uint8_t flags = 0x0;
 
 		// Get flipped!
@@ -255,7 +257,7 @@ int main(int argc, char** argv)
 		gfxTiles = layerCls->GetData();
 		for (int i = 0; i < layerCls->GetWidth() * layerCls->GetHeight(); ++i)
 		{
-			uint8_t ucTile = (uint8_t)tmx.LidFromGid((*gfxTiles++) & ~TmxLayer::FLIP_MASK);
+			uint8_t ucTile = static_cast<uint8_t>(tmx.LidFromGid((*gfxTiles++) & ~TmxLayer::FLIP_MASK));
 			collisionDat.push_back(ucTile);
 		}
 
@@ -285,8 +287,8 @@ int main(int argc, char** argv)
 			float x, y;
 			obj->GetPos(x, y);
 			objDat.push_back(it->second);
-			objDat.push_back((int)(x * 256.0f));
-			objDat.push_back((int)(y * 256.0f));
+			objDat.push_back(static_cast<int>(x * 256.0f));
+			objDat.push_back(static_cast<int>(y * 256.0f));
 		}
 
 		// Write objects

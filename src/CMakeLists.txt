@@ -17,7 +17,7 @@ set_target_properties(tmx2gba PROPERTIES
 target_compile_options(tmx2gba PRIVATE
 	$<$<CXX_COMPILER_ID:MSVC>:/Wall>
 	$<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -pedantic>
-	$<$<CXX_COMPILER_ID:Clang,AppleClang>:-Weverything>)
+	$<$<CXX_COMPILER_ID:Clang,AppleClang>:-Weverything -Wno-c++98-compat>)
 
 target_link_libraries(tmx2gba
 	External::base64
