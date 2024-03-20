@@ -35,7 +35,7 @@ namespace ArgParse
 	{
 		const std::vector<Option> options;
 
-		inline constexpr Options(const std::initializer_list<Option>&& rhs)
+		inline Options(const std::initializer_list<Option>&& rhs)
 			: options(std::move(rhs)) {}
 
 		void ShowShortUsage(const std::string_view name, std::ostream& out) const;
