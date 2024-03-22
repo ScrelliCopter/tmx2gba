@@ -2,6 +2,10 @@ name: CMake
 
 on:
   push:
+    paths:
+    - "src/**"
+    - "ext/**"
+    - "CMakeLists.txt"
   pull_request:
     branches: [ "master" ]
 
