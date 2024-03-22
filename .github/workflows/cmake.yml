@@ -35,7 +35,7 @@ jobs:
       run: >-
         cmake -B build
         -G "${{startsWith(matrix.config.os, 'windows') && 'NMake Makefiles' || 'Ninja'}}"
-        ${{(startsWith(matrix.config.os, 'macos') && matrix.config.arch) && join('-DCMAKE_OSX_ARCHITECTURES=', matrix.config.arch) || ''}}
+        ${{(startsWith(matrix.config.os, 'macos') && matrix.config.arch) && format('-DCMAKE_OSX_ARCHITECTURES="{0}"', matrix.config.arch) || ''}}
         ${{matrix.config.extra}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
@@ -44,4 +44,4 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: ${{env.ARTIFACT_NAME}}-${{matrix.config.artifact}}
-        path: build/src/${{join(env.ARTIFACT_NAME, startsWith(matrix.config.os, 'windows') && '.exe' || '')}}
+        path: build/src/${{env.ARTIFACT_NAME}}${{startsWith(matrix.config.os, 'windows') && '.exe' || ''}}
