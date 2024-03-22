@@ -2,36 +2,46 @@ name: CMake
 
 on:
   push:
-    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
-  BUILD_TYPE: Release
+  ARTIFACT_NAME: tmx2gba
+  BUILD_TYPE: RelWithDebInfo
 
 jobs:
   build:
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        config:
+        - { name: "MacOS 13.0 Universal", os: macos-13, artifact: macos-universal, arch: arm64;x86_64 }
+        - { name: "Windows MSVC x86", os: windows-latest, artifact: windows-x86, arch: x86 }
+        - { name: "Windows MSVC x64", os: windows-latest, artifact: windows-x64 }
+        - { name: "Windows MSVC ARM64", os: windows-latest, artifact: windows-arm64, arch: amd64_arm64 }
+        - { name: "Ubuntu", artifact: "linux", os: ubuntu-latest }
+    runs-on: ${{matrix.config.os}}
 
     steps:
     - uses: actions/checkout@v4
+    # Since ninja isn't used it will take less time if this step is skipped
+    - uses: lukka/get-cmake@latest
+      if: ${{!startsWith(matrix.config.os, 'windows')}}
+    - uses: TheMrMilchmann/setup-msvc-dev@v3
+      if: ${{startsWith(matrix.config.os, 'windows')}}
+      with:
+        arch: ${{matrix.config.arch && matrix.config.arch || 'x64'}}
 
     - name: Configure CMake
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+      run: >-
+        cmake -B build
+        -G "${{startsWith(matrix.config.os, 'windows') && 'NMake Makefiles' || 'Ninja'}}"
+        ${{(startsWith(matrix.config.os, 'macos') && matrix.config.arch) && join('-DCMAKE_OSX_ARCHITECTURES=', matrix.config.arch) || ''}}
+        ${{matrix.config.extra}} -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
 
     - name: Build
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+      run: cmake --build build --config ${{env.BUILD_TYPE}}
 
-    - name: Test
-      working-directory: ${{github.workspace}}/build
-      # Execute tests defined by the CMake configuration.
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ctest -C ${{env.BUILD_TYPE}}
-
+    - uses: actions/upload-artifact@v4
+      with:
+        name: ${{env.ARTIFACT_NAME}}-${{matrix.config.artifact}}
+        path: build/src/${{join(env.ARTIFACT_NAME, startsWith(matrix.config.os, 'windows') && '.exe' || '')}}
