@@ -3,6 +3,7 @@
 #include "swriter.hpp"
 #include <type_traits>
 #include <limits>
+#include <assert.h>
 
 #define GNU_STYLE  0
 #define MASM_STYLE 1
@@ -130,30 +131,25 @@ void SWriter::WriteSymbol(const std::string_view suffix)
 
 void SWriter::WriteArray(const std::string_view suffix, std::span<uint8_t> data, int numCols)
 {
+	assert(data.size());
 	WriteSymbol(suffix);
 	WriteArrayDetail(stream, data.begin(), data.end(), numCols);
 }
 
 void SWriter::WriteArray(const std::string_view suffix, std::span<uint16_t> data, int numCols)
 {
+	assert(data.size());
 	WriteSymbol(suffix);
 	WriteArrayDetail(stream, data.begin(), data.end(), numCols);
 }
 
 void SWriter::WriteArray(const std::string_view suffix, std::span<uint32_t> data, int numCols)
 {
+	assert(data.size());
 	WriteSymbol(suffix);
 	WriteArrayDetail(stream, data.begin(), data.end(), numCols);
 }
 
-
-SWriter::~SWriter()
-{
-	if (stream.is_open())
-	{
-		stream.close();
-	}
-}
 
 bool SWriter::Open(const std::filesystem::path& path, const std::string_view name)
 {

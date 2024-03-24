@@ -1,28 +1,20 @@
 add_executable(tmx2gba
 	argparse.hpp argparse.cpp
-	tmxlayer.hpp
-	tmxobject.hpp
 	tmxreader.hpp tmxreader.cpp
-	tmxtileset.hpp
-	swriter.hpp swriter.cpp
+	convert.hpp convert.cpp
 	headerwriter.hpp headerwriter.cpp
+	swriter.hpp swriter.cpp
 	tmx2gba.cpp)
 
-set_target_properties(tmx2gba PROPERTIES
-	# C++20 & C99
-	CXX_STANDARD 20
-	C_STANDARD 99)
+set_target_properties(tmx2gba PROPERTIES CXX_STANDARD 20)
 
 # Enable strong warnings
 target_compile_options(tmx2gba PRIVATE
 	$<$<CXX_COMPILER_ID:MSVC>:/Wall>
 	$<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -pedantic>
-	$<$<CXX_COMPILER_ID:Clang,AppleClang>:-Weverything -Wno-c++98-compat>)
+	$<$<CXX_COMPILER_ID:Clang,AppleClang>:-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded>)
 
-target_link_libraries(tmx2gba
-	External::base64
-	External::miniz
-	External::rapidxml)
+target_link_libraries(tmx2gba tmxlite)
 
 if (TMX2GBA_DKP_INSTALL)
 	if (DEFINED ENV{DEVKITPRO})
