@@ -5,12 +5,11 @@
 #include "convert.hpp"
 #include "headerwriter.hpp"
 #include "swriter.hpp"
+#include "config.h"
 #include <iostream>
 #include <map>
 #include <algorithm>
 
-
-static const char* versionStr = "tmx2gba version 0.3, (c) 2015-2022 a dinosaur";
 
 struct Arguments
 {
@@ -148,7 +147,7 @@ int main(int argc, char** argv)
 	}
 	if (p.showVersion)
 	{
-		std::cout << versionStr << std::endl;
+		std::cout << "tmx2gba version " << TMX2GBA_VERSION << ", (c) 2015-2024 a dinosaur" << std::endl;
 		return 0;
 	}
 

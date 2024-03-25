@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION "3.15" FATAL_ERROR)
-project(tmx2gba VERSION "0.3")
+project(tmx2gba
+	VERSION      "0.7"
+	DESCRIPTION  "Simple CLI utility for converting Tiled (.tmx) maps to GBA-friendly charmaps."
+	HOMEPAGE_URL "https://github.com/ScrelliCopter/tmx2gba")
 
 # Options
 option(TMX2GBA_DKP_INSTALL "Install into DEVKITPRO prefix" OFF)

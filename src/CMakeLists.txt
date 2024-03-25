@@ -6,6 +6,10 @@ add_executable(tmx2gba
 	swriter.hpp swriter.cpp
 	tmx2gba.cpp)
 
+configure_file(config.h.in config.h @ONLY)
+target_sources(tmx2gba PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/config.h)
+target_include_directories(tmx2gba PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
+
 set_target_properties(tmx2gba PROPERTIES CXX_STANDARD 20)
 
 # Enable strong warnings
