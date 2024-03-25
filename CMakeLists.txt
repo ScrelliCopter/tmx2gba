@@ -15,8 +15,10 @@ endif()
 
 # Libraries
 set(TMXLITE_STATIC_LIB ON)
+set(USE_ZSTD ON)
 add_subdirectory(ext/miniz)
 add_subdirectory(ext/pugixml)
+add_subdirectory(ext/zstd)
 add_subdirectory(ext/tmxlite)
 
 # Main tmx2gba sources

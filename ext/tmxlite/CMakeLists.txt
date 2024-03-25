@@ -64,36 +64,21 @@ endif()
 
 # if we want external zip and xml libs find them and tell the compiler
 if(USE_EXTLIBS)
-	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_EXTLIBS)
-	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_ZSTD)
+	find_package(ZLIB REQUIRED)
+	find_package(PUGIXML REQUIRED)
+	find_package(Zstd REQUIRED)
 
-	list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
-
-    find_package(ZLIB REQUIRED)
-    find_package(PUGIXML REQUIRED)
-    find_package(Zstd REQUIRED)
-
+	target_compile_definitions(${PROJECT_NAME} PRIVATE USE_EXTLIBS USE_ZSTD)
 	target_include_directories(${PROJECT_NAME} PRIVATE ${ZLIB_INCLUDE_DIRS} ${PUGIXML_INCLUDE_DIR} ${ZSTD_INCLUDE_DIR})
-
+	target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES} ${PUGIXML_LIBRARY} ${ZSTD_LIBRARY})
 else()
 	# add miniz and pugixml from source
 	target_link_libraries(${PROJECT_NAME} pugixml::static External::miniz)
 
 	if(USE_ZSTD)
 		target_compile_definitions(${PROJECT_NAME} PRIVATE USE_ZSTD)
-
-		list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
-		find_package(Zstd REQUIRED)
-		target_include_directories(${PROJECT_NAME} PRIVATE ${ZSTD_INCLUDE_DIR})
+		target_link_libraries(${PROJECT_NAME} zstd::static)
 	endif()
-endif()
-
-if(USE_EXTLIBS)
-    target_link_libraries(${PROJECT_NAME} ${ZLIB_LIBRARIES} ${PUGIXML_LIBRARY} ${ZSTD_LIBRARY})
-else()
-    if(USE_ZSTD)
-    target_link_libraries(${PROJECT_NAME} ${ZSTD_LIBRARY})
-    endif()
 endif()
 
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -34,12 +34,18 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 		auto name = layer->getName();
 		if (layer->getType() == tmx::Layer::Type::Tile)
 		{
+			const auto& tileLayer = layer->getLayerAs<TileLayer>();
+			// tmxlite unfortunately has no error reporting when a layer fails to load,
+			//  empty check will suffice for the time being
+			if (tileLayer.getTiles().empty())
+				continue;
+
 			if (layerGfx == std::nullopt && (graphicsName.empty() || name == graphicsName))
-				layerGfx = layer->getLayerAs<TileLayer>();
+				layerGfx = tileLayer;
 			if (!collisionName.empty() && layerCls == std::nullopt && name == collisionName)
-				layerCls = layer->getLayerAs<TileLayer>();
+				layerCls = tileLayer;
 			if (!paletteName.empty() && layerPal == std::nullopt && name == paletteName)
-				layerPal = layer->getLayerAs<TileLayer>();
+				layerPal = tileLayer;
 		}
 		else if (!objMapping.empty() && layer->getType() == tmx::Layer::Type::Object)
 		{
@@ -70,7 +76,7 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 		mGraphics.emplace_back(Tile { tmxTile.ID, tmxTile.flipFlags });
 
 	// Read optional layers
-	if (layerPal != std::nullopt)
+	if (layerPal.has_value())
 	{
 		std::vector<uint32_t> v;
 		v.reserve(numTiles);
@@ -78,7 +84,7 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 			v.emplace_back(tmxTile.ID);
 		mPalette.emplace(v);
 	}
-	if (layerCls != std::nullopt)
+	if (layerCls.has_value())
 	{
 		std::vector<uint32_t> v;
 		v.reserve(numTiles);

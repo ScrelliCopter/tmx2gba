@@ -2,6 +2,7 @@
 
 #include "convert.hpp"
 #include "tmxreader.hpp"
+#include <cassert>
 
 
 bool convert::ConvertCharmap(std::vector<uint16_t>& out, int idxOffset, uint32_t defaultPal, const TmxReader& tmx)
@@ -10,6 +11,10 @@ bool convert::ConvertCharmap(std::vector<uint16_t>& out, int idxOffset, uint32_t
 	const auto palTiles = tmx.GetPaletteTiles();
 
 	const size_t numTiles = tmx.TileCount();
+	assert(gfxTiles.size() == numTiles);
+	if (palTiles.has_value())
+		assert(palTiles.value().size() == numTiles);
+
 	out.reserve(numTiles);
 	for (size_t i = 0; i < numTiles; ++i)
 	{
@@ -38,9 +43,12 @@ bool convert::ConvertCharmap(std::vector<uint16_t>& out, int idxOffset, uint32_t
 
 bool convert::ConvertCollision(std::vector<uint8_t>& out, const TmxReader& tmx)
 {
+	assert(tmx.GetCollisionTiles().has_value());
 	const auto clsTiles = tmx.GetCollisionTiles().value();
 
 	size_t numTiles = tmx.TileCount();
+	assert(clsTiles.size() == numTiles);
+
 	out.reserve(numTiles);
 	for (size_t i = 0; i < numTiles; ++i)
 	{
@@ -54,6 +62,7 @@ bool convert::ConvertCollision(std::vector<uint8_t>& out, const TmxReader& tmx)
 
 bool convert::ConvertObjects(std::vector<uint32_t>& out, const TmxReader& tmx)
 {
+	assert(tmx.GetObjects().has_value());
 	const auto objects = tmx.GetObjects().value();
 
 	for (auto obj : objects)

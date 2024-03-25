@@ -146,6 +146,7 @@ void TileLayer::parseBase64(const pugi::xml_node& node)
                     LOG("Failed to decompress layer data, node skipped.\nError: " + err, Logger::Type::Error);
                 }
             }
+            break;
 #else
             Logger::log("Library must be built with USE_EXTLIBS or USE_ZSTD for Zstd compression", Logger::Type::Error);
             return {};
