@@ -1,15 +1,14 @@
 project(tmxlite VERSION 1.3.1)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules/")
-
 set(USE_RTTI TRUE CACHE BOOL "Use run time type information?")
-
-set(USE_EXTLIBS FALSE CACHE BOOL "Use external zlib, zstd and pugixml libraries instead of the included source?")
-set(USE_ZSTD FALSE CACHE BOOL "Enable zstd compression? (Already set to true if USE_EXTLIBS is true)")
 
 # includes the list of source files in the src directory
 set(PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-file(GLOB PROJECT_SRC ${PROJECT_DIR}/*.cpp)
+file(GLOB PROJECT_SRC            ${PROJECT_DIR}/*.cpp)
+file(GLOB PROJECT_HEADERS        ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp)
+file(GLOB PROJECT_HEADERS_INL    ${CMAKE_CURRENT_SOURCE_DIR}/include/*.inl)
+file(GLOB PROJECT_HEADERS_DETAIL ${CMAKE_CURRENT_SOURCE_DIR}/include/detail/*.hpp)
+set(PROJECT_SRC ${PROJECT_SRC} ${PROJECT_HEADERS} ${PROJECT_HEADERS_INL} ${PROJECT_HEADERS_DETAIL})
 
 add_library(tmxlite STATIC ${PROJECT_SRC})
 
@@ -28,23 +27,26 @@ if (MSVC)
 	target_compile_definitions(tmxlite PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
 
-# if we want external zip and xml libs find them and tell the compiler
-if (USE_EXTLIBS)
-	find_package(ZLIB REQUIRED)
-	find_package(PUGIXML REQUIRED)
-	find_package(Zstd REQUIRED)
-
-	target_compile_definitions(tmxlite PRIVATE USE_EXTLIBS USE_ZSTD)
-	target_include_directories(tmxlite PRIVATE ${ZLIB_INCLUDE_DIRS} ${PUGIXML_INCLUDE_DIR} ${ZSTD_INCLUDE_DIR})
-	target_link_libraries(tmxlite ${ZLIB_LIBRARIES} ${PUGIXML_LIBRARY} ${ZSTD_LIBRARY})
+if (USE_BUNDLED_PUGIXML)
+	target_link_libraries(tmxlite pugixml::static)
 else()
-	# add miniz and pugixml from source
-	target_link_libraries(tmxlite pugixml::static miniz::miniz)
+	target_include_directories(tmxlite PRIVATE ${PUGIXML_INCLUDE_DIR})
+	target_link_libraries(tmxlite ZLIB::ZLIB ${PUGIXML_LIBRARY})
+endif()
 
-	if (USE_ZSTD)
-		target_compile_definitions(tmxlite PRIVATE USE_ZSTD)
-		target_link_libraries(tmxlite zstd::static)
-	endif()
+if (USE_ZLIB)
+	target_compile_definitions(tmxlite PRIVATE USE_ZLIB)
+	target_link_libraries(tmxlite ZLIB::ZLIB)
+else()
+	target_link_libraries(tmxlite miniz::miniz)
+endif()
+
+target_compile_definitions(tmxlite PRIVATE USE_ZSTD)
+if (USE_BUNDLED_ZSTD)
+	target_link_libraries(tmxlite zstd::static)
+else()
+	target_include_directories(tmxlite PRIVATE ${ZSTD_INCLUDE_DIR})
+	target_link_libraries(tmxlite ZLIB::ZLIB ${ZSTD_LIBRARY})
 endif()
 
 target_include_directories(tmxlite PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -40,10 +40,6 @@ function (add_zstd_compilation_flags _target)
 		target_link_options(${_target} PRIVATE -z noexecstack)  # LDFLAGS
 		target_compile_options(${_target} PRIVATE -Wunused-parameter -Wa,--noexecstack)  # CFLAGS & CXXFLAGS
 	elseif (MSVC)
-		set(ACTIVATE_MULTITHREADED_COMPILATION "ON" CACHE BOOL "activate multi-threaded compilation (/MP flag)")
-		if (CMAKE_GENERATOR MATCHES "Visual Studio" AND ACTIVATE_MULTITHREADED_COMPILATION)
-			target_compile_options(${_target} PRIVATE "/MP")
-		endif ()
 		# UNICODE SUPPORT
 		target_compile_definitions(${_target} PRIVATE _UNICODE UNICODE)
 		# Enable asserts in Debug mode
@@ -97,26 +93,12 @@ set(Headers
 	${DictBuilderHeaders})
 
 if (ZSTD_LEGACY_SUPPORT)
-	set(LIBRARY_LEGACY_DIR ${LIBRARY_DIR}/legacy)
-
-	set(Sources ${Sources}
-		${LIBRARY_LEGACY_DIR}/zstd_v01.c
-		${LIBRARY_LEGACY_DIR}/zstd_v02.c
-		${LIBRARY_LEGACY_DIR}/zstd_v03.c
-		${LIBRARY_LEGACY_DIR}/zstd_v04.c
-		${LIBRARY_LEGACY_DIR}/zstd_v05.c
-		${LIBRARY_LEGACY_DIR}/zstd_v06.c
-		${LIBRARY_LEGACY_DIR}/zstd_v07.c)
-
-	set(Headers ${Headers}
-		${LIBRARY_LEGACY_DIR}/zstd_legacy.h
-		${LIBRARY_LEGACY_DIR}/zstd_v01.h
-		${LIBRARY_LEGACY_DIR}/zstd_v02.h
-		${LIBRARY_LEGACY_DIR}/zstd_v03.h
-		${LIBRARY_LEGACY_DIR}/zstd_v04.h
-		${LIBRARY_LEGACY_DIR}/zstd_v05.h
-		${LIBRARY_LEGACY_DIR}/zstd_v06.h
-		${LIBRARY_LEGACY_DIR}/zstd_v07.h)
+	foreach (SOURCE zstd_v01.c zstd_v02.c zstd_v03.c zstd_v04.c zstd_v05.c zstd_v06.c zstd_v07.c)
+		list(APPEND Sources ${LIBRARY_DIR}/legacy/${SOURCE})
+	endforeach()
+	foreach (HEADER zstd_legacy.h zstd_v01.h zstd_v02.h zstd_v03.h zstd_v04.h zstd_v05.h zstd_v06.h zstd_v07.h)
+		list(APPEND Headers ${LIBRARY_DIR}/legacy/${HEADER})
+	endforeach()
 endif()
 
 # Explicitly set the language to C for all files, including ASM files.
@@ -125,28 +107,28 @@ endif()
 # macros.
 set_source_files_properties(${Sources} PROPERTIES LANGUAGE C)
 
-add_library(libzstd_static STATIC ${Sources} ${Headers})
-add_library(zstd::static ALIAS libzstd_static)
+add_library(zstd STATIC ${Sources} ${Headers})
+add_library(zstd::static ALIAS zstd)
 
-add_zstd_compilation_flags(libzstd_static)
+add_zstd_compilation_flags(zstd)
 
 # Define library directory, where sources and header files are located
-target_include_directories(libzstd_static PUBLIC ${LIBRARY_DIR})
-target_include_directories(libzstd_static PRIVATE ${LIBRARY_DIR}/common)
+target_include_directories(zstd PUBLIC ${LIBRARY_DIR})
+target_include_directories(zstd PRIVATE ${LIBRARY_DIR}/common)
 
 if (ZSTD_LEGACY_SUPPORT)
-	include_directories(${LIBRARY_LEGACY_DIR})
-	target_compile_definitions(libzstd_static PRIVATE ZSTD_LEGACY_SUPPORT=${ZSTD_LEGACY_LEVEL})
+	target_include_directories(zstd PRIVATE ${LIBRARY_DIR}/legacy)
+	target_compile_definitions(zstd PRIVATE ZSTD_LEGACY_SUPPORT=${ZSTD_LEGACY_LEVEL})
 else()
-	target_compile_definitions(libzstd_static PRIVATE ZSTD_LEGACY_SUPPORT=0)
+	target_compile_definitions(zstd PRIVATE ZSTD_LEGACY_SUPPORT=0)
 endif()
 
 if (ZSTD_MULTITHREAD_SUPPORT)
-	target_compile_definitions(libzstd_static PRIVATE ZSTD_MULTITHREAD)
+	target_compile_definitions(zstd PRIVATE ZSTD_MULTITHREAD)
 	if (UNIX)
 		set(THREADS_PREFER_PTHREAD_FLAG ON)
 		find_package(Threads REQUIRED)
-		target_link_libraries(libzstd_static Threads::Threads)
+		target_link_libraries(zstd Threads::Threads)
 		if (NOT CMAKE_USE_PTHREADS_INIT)
 			message(SEND_ERROR "ZSTD currently does not support thread libraries other than pthreads")
 		endif()
@@ -155,16 +137,8 @@ endif()
 
 # Add specific compile definitions for MSVC project
 if (MSVC)
-	set(COMMON_DEFINITIONS ZSTD_DISABLE_ASM _CRT_SECURE_NO_WARNINGS)
-	target_compile_definitions(libzstd_static PRIVATE ZSTD_HEAPMODE=0 ${COMMON_DEFINITIONS})
+	target_compile_definitions(zstd PRIVATE ZSTD_HEAPMODE=0 ZSTD_DISABLE_ASM _CRT_SECURE_NO_WARNINGS)
 endif()
 
 # Define static library names
-set_property(TARGET libzstd_static PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-# With MSVC static library needs to be renamed to avoid conflict with import library
-if (MSVC OR (WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND NOT MINGW))
-	set_property(TARGET libzstd_static PROPERTY OUTPUT_NAME zstd_static)
-else()
-	set_property(TARGET libzstd_static PROPERTY OUTPUT_NAME zstd)
-endif()
+set_property(TARGET zstd PROPERTY POSITION_INDEPENDENT_CODE ON)

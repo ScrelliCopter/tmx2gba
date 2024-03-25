@@ -17,35 +17,31 @@ set(PUGIXML_PUBLIC_DEFINITIONS
 	$<$<BOOL:${PUGIXML_NO_STL}>:PUGIXML_NO_STL>
 	$<$<BOOL:${PUGIXML_NO_EXCEPTIONS}>:PUGIXML_NO_EXCEPTIONS>)
 
-add_library(pugixml-static STATIC
-	${PROJECT_SOURCE_DIR}/src/pugixml.cpp)
-add_library(pugixml::static ALIAS pugixml-static)
+add_library(pugixml STATIC
+	src/pugiconfig.hpp
+	src/pugixml.hpp
+	src/pugixml.cpp)
+add_library(pugixml::static ALIAS pugixml)
 
-if (NOT DEFINED CMAKE_CXX_STANDARD_REQUIRED)
-	set_property(TARGET pugixml-static PROPERTY CXX_STANDARD_REQUIRED ON)
-endif()
+set_target_properties(pugixml PROPERTIES
+	CXX_STANDARD_REQUIRED ON
+	CXX_STANDARD 11)
 
-if (NOT DEFINED CMAKE_CXX_STANDARD)
-	set_property(TARGET pugixml-static PROPERTY CXX_STANDARD 11)
-endif()
-
-set_property(TARGET pugixml-static PROPERTY EXPORT_NAME static)
-target_include_directories(pugixml-static PUBLIC
+set_property(TARGET pugixml PROPERTY EXPORT_NAME static)
+target_include_directories(pugixml PUBLIC
 	$<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>)
-target_compile_definitions(pugixml-static PUBLIC
+target_compile_definitions(pugixml PUBLIC
 	${PUGIXML_BUILD_DEFINES}
 	${PUGIXML_PUBLIC_DEFINITIONS})
 
-add_library(pugixml INTERFACE)
-target_link_libraries(pugixml INTERFACE pugixml-static)
 add_library(pugixml::pugixml ALIAS pugixml)
 
-set_target_properties(pugixml-static PROPERTIES
+set_target_properties(pugixml PROPERTIES
 	EXCLUDE_FROM_ALL ON
 	POSITION_INDEPENDENT_CODE ON
 	SOVERSION ${PROJECT_VERSION_MAJOR}
 	VERSION ${PROJECT_VERSION}
 	OUTPUT_NAME pugixml)
 
-set_target_properties(pugixml-static PROPERTIES
+set_target_properties(pugixml PROPERTIES
 	EXCLUDE_FROM_ALL OFF)

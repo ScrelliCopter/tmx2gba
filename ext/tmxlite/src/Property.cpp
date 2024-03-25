@@ -25,11 +25,7 @@ and must not be misrepresented as being the original software.
 source distribution.
 *********************************************************************/
 
-#ifdef USE_EXTLIBS
 #include <pugixml.hpp>
-#else
-#include "detail/pugixml.hpp"
-#endif
 #include <tmxlite/Property.hpp>
 #include <tmxlite/detail/Log.hpp>
 #include <tmxlite/FreeFuncs.hpp>

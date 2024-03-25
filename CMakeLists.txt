@@ -5,7 +5,13 @@ project(tmx2gba
 	HOMEPAGE_URL "https://github.com/ScrelliCopter/tmx2gba")
 
 # Options
+option(USE_ZLIB            "Use zlib instead of bundled miniz" "${UNIX}")
+option(USE_BUNDLED_PUGIXML "Use bundled PUGIXML" ON)
+option(USE_BUNDLED_ZSTD    "Use bundled libzstd" ON)
+option(USE_BUNDLED_TMXLITE "Use bundled tmxlite" ON)
+
 option(TMX2GBA_DKP_INSTALL "Install into DEVKITPRO prefix" OFF)
+
 option(ENABLE_ASAN "Enable address sanitiser" OFF)
 
 if (ENABLE_ASAN)
@@ -13,12 +19,32 @@ if (ENABLE_ASAN)
 	add_link_options(-fsanitize=address -shared-libasan)
 endif()
 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
+
 # Libraries
-set(USE_ZSTD ON)
-add_subdirectory(ext/miniz)
-add_subdirectory(ext/pugixml)
-add_subdirectory(ext/zstd)
-add_subdirectory(ext/tmxlite)
+if (USE_BUNDLED_PUGIXML)
+	add_subdirectory(ext/pugixml)
+else()
+	find_package(PUGIXML REQUIRED)
+endif()
+
+if (USE_ZLIB)
+	find_package(ZLIB REQUIRED)
+else()
+	add_subdirectory(ext/miniz)
+endif()
+
+if (USE_BUNDLED_ZSTD)
+	add_subdirectory(ext/zstd)
+else()
+	find_package(ZSTD REQUIRED)
+endif()
+
+if (USE_BUNDLED_TMXLITE)
+	add_subdirectory(ext/tmxlite)
+else()
+	find_package(TMXLITE REQUIRED)
+endif()
 
 # Main tmx2gba sources
 add_subdirectory(src)

@@ -25,7 +25,7 @@ and must not be misrepresented as being the original software.
 source distribution.
 *********************************************************************/
 
-#ifndef USE_EXTLIBS
+#ifndef USE_ZLIB
 #include "miniz.h"
 #else
 #include <zlib.h>
@@ -63,7 +63,7 @@ bool tmx::decompress(const char* source, std::vector<unsigned char>& dest, std::
     //to be incorrect in miniz. This is fine for zlib
     //compressed data, but gzip compressed streams
     //will fail to inflate.
-#ifdef USE_EXTLIBS
+#ifdef USE_ZLIB
     if (inflateInit2(&stream, 15 + 32) != Z_OK)
 #else
     if (inflateInit(&stream) != Z_OK)
