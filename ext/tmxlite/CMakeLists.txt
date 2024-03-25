@@ -77,8 +77,7 @@ if(USE_EXTLIBS)
 
 else()
 	# add miniz and pugixml from source
-	target_sources(${PROJECT_NAME} PRIVATE ${PROJECT_DIR}/detail/pugixml.cpp)
-	target_link_libraries(${PROJECT_NAME} External::miniz)
+	target_link_libraries(${PROJECT_NAME} pugixml::static External::miniz)
 
 	if(USE_ZSTD)
 		target_compile_definitions(${PROJECT_NAME} PRIVATE USE_ZSTD)
