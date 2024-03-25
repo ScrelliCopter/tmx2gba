@@ -7,21 +7,51 @@
 # in the COPYING file in the root directory of this source tree).
 # ################################################################
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/CMakeModules")
-
 set(LIBRARY_DIR ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 # Parse version
-include(GetZstdLibraryVersion)
-GetZstdLibraryVersion(${LIBRARY_DIR}/zstd.h zstd_VERSION_MAJOR zstd_VERSION_MINOR zstd_VERSION_PATCH)
+file(READ ${LIBRARY_DIR}/zstd.h CONTENT)  # Read file content
+
+string(REGEX MATCH ".*define ZSTD_VERSION_MAJOR *([0-9]+).*define ZSTD_VERSION_MINOR *([0-9]+).*define ZSTD_VERSION_RELEASE *([0-9]+)" VERSION_REGEX "${CONTENT}")
+set(zstd_VERSION_MAJOR ${CMAKE_MATCH_1} PARENT_SCOPE)
+set(zstd_VERSION_MINOR ${CMAKE_MATCH_2} PARENT_SCOPE)
+set(zstd_VERSION_PATCH ${CMAKE_MATCH_3} PARENT_SCOPE)
 
 enable_language(ASM)
 
 #-----------------------------------------------------------------------------
 # Add extra compilation flags
 #-----------------------------------------------------------------------------
-include(AddZstdCompilationFlags)
-ADD_ZSTD_COMPILATION_FLAGS()
+function (add_zstd_compilation_flags _target)
+	if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang" OR MINGW)
+		if (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND MSVC)
+			# clang-cl normally maps -Wall to -Weverything.
+			target_compile_options(${_target} PRIVATE "/clang:-Wall")
+		else()
+			target_compile_options(${_target} PRIVATE -Wall)
+		endif()
+		target_compile_options(${_target} PRIVATE -Wextra -Wundef -Wshadow -Wcast-align -Wcast-qual)
+		target_compile_options(${_target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wstrict-prototypes>)
+		# Enable asserts in Debug mode
+		if (CMAKE_BUILD_TYPE MATCHES "Debug")
+			target_compile_options(${_target} PRIVATE DEBUGLEVEL=1)
+		endif()
+		# Add noexecstack flags
+		target_link_options(${_target} PRIVATE -z noexecstack)  # LDFLAGS
+		target_compile_options(${_target} PRIVATE -Qunused-arguments -Wa,--noexecstack)  # CFLAGS & CXXFLAGS
+	elseif (MSVC)
+		set(ACTIVATE_MULTITHREADED_COMPILATION "ON" CACHE BOOL "activate multi-threaded compilation (/MP flag)")
+		if (CMAKE_GENERATOR MATCHES "Visual Studio" AND ACTIVATE_MULTITHREADED_COMPILATION)
+			target_compile_options(${_target} PRIVATE "/MP")
+		endif ()
+		# UNICODE SUPPORT
+		target_compile_definitions(${_target} PRIVATE _UNICODE UNICODE)
+		# Enable asserts in Debug mode
+		if (CMAKE_BUILD_TYPE MATCHES "Debug")
+			target_compile_definitions(${_target} PRIVATE DEBUGLEVEL=1)
+		endif()
+	endif()
+endfunction()
 
 # Legacy support
 option(ZSTD_LEGACY_SUPPORT "LEGACY SUPPORT" ON)
@@ -95,36 +125,27 @@ endif()
 # macros.
 set_source_files_properties(${Sources} PROPERTIES LANGUAGE C)
 
-# Split project to static and shared libraries build
-set(library_targets)
-add_library(libzstd_shared SHARED ${Sources} ${Headers} ${PlatformDependResources})
-add_library(zstd::shared ALIAS libzstd_shared)
-list(APPEND library_targets libzstd_shared)
-
 add_library(libzstd_static STATIC ${Sources} ${Headers})
 add_library(zstd::static ALIAS libzstd_static)
-list(APPEND library_targets libzstd_static)
 
-foreach (LIB ${library_targets})
-	# Define library directory, where sources and header files are located
-	target_include_directories(${LIB} PUBLIC ${LIBRARY_DIR})
-	target_include_directories(${LIB} PRIVATE ${LIBRARY_DIR}/common)
+add_zstd_compilation_flags(libzstd_static)
 
-	if (ZSTD_LEGACY_SUPPORT)
-		include_directories(${LIBRARY_LEGACY_DIR})
-		target_compile_definitions(${LIB} PRIVATE ZSTD_LEGACY_SUPPORT=${ZSTD_LEGACY_LEVEL})
-	else()
-		target_compile_definitions(${LIB} PRIVATE ZSTD_LEGACY_SUPPORT=0)
-	endif()
-endforeach()
+# Define library directory, where sources and header files are located
+target_include_directories(libzstd_static PUBLIC ${LIBRARY_DIR})
+target_include_directories(libzstd_static PRIVATE ${LIBRARY_DIR}/common)
+
+if (ZSTD_LEGACY_SUPPORT)
+	include_directories(${LIBRARY_LEGACY_DIR})
+	target_compile_definitions(libzstd_static PRIVATE ZSTD_LEGACY_SUPPORT=${ZSTD_LEGACY_LEVEL})
+else()
+	target_compile_definitions(libzstd_static PRIVATE ZSTD_LEGACY_SUPPORT=0)
+endif()
 
 if (ZSTD_MULTITHREAD_SUPPORT)
-	target_compile_definitions(libzstd_shared PRIVATE ZSTD_MULTITHREAD)
 	target_compile_definitions(libzstd_static PRIVATE ZSTD_MULTITHREAD)
 	if (UNIX)
 		set(THREADS_PREFER_PTHREAD_FLAG ON)
 		find_package(Threads REQUIRED)
-		target_link_libraries(libzstd_shared Threads::Threads)
 		target_link_libraries(libzstd_static Threads::Threads)
 		if (NOT CMAKE_USE_PTHREADS_INIT)
 			message(SEND_ERROR "ZSTD currently does not support thread libraries other than pthreads")
@@ -135,16 +156,10 @@ endif()
 # Add specific compile definitions for MSVC project
 if (MSVC)
 	set(COMMON_DEFINITIONS ZSTD_DISABLE_ASM _CRT_SECURE_NO_WARNINGS)
-	target_compile_definitions(libzstd_shared PRIVATE ZSTD_DLL_EXPORT=1 ZSTD_HEAPMODE=0 _CONSOLE ${COMMON_DEFINITIONS})
 	target_compile_definitions(libzstd_static PRIVATE ZSTD_HEAPMODE=0 ${COMMON_DEFINITIONS})
 endif()
 
-# Define static and shared library names
-set_target_properties(libzstd_shared PROPERTIES
-	OUTPUT_NAME zstd
-	VERSION ${zstd_VERSION_MAJOR}.${zstd_VERSION_MINOR}.${zstd_VERSION_PATCH}
-	SOVERSION ${zstd_VERSION_MAJOR})
-
+# Define static library names
 set_property(TARGET libzstd_static PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 # With MSVC static library needs to be renamed to avoid conflict with import library

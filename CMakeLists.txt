@@ -6,15 +6,14 @@ project(tmx2gba
 
 # Options
 option(TMX2GBA_DKP_INSTALL "Install into DEVKITPRO prefix" OFF)
-option(ASAN "Enable address sanitiser" OFF)
+option(ENABLE_ASAN "Enable address sanitiser" OFF)
 
-if (ASAN)
+if (ENABLE_ASAN)
 	add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
 	add_link_options(-fsanitize=address -shared-libasan)
 endif()
 
 # Libraries
-set(TMXLITE_STATIC_LIB ON)
 set(USE_ZSTD ON)
 add_subdirectory(ext/miniz)
 add_subdirectory(ext/pugixml)
