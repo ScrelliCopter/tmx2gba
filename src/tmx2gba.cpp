@@ -116,7 +116,7 @@ static bool ParseArgs(int argc, char** argv, Arguments& params)
 }
 
 
-static std::string SanitiseLabel(const std::string& ident)
+static std::string SanitiseLabel(const std::string_view ident)
 {
 	std::string out;
 	out.reserve(ident.length());
@@ -203,7 +203,7 @@ int main(int argc, char** argv)
 	}
 
 	// Get name from file
-	std::string name = SanitiseLabel(std::filesystem::path(p.outPath).stem());
+	std::string name = SanitiseLabel(std::filesystem::path(p.outPath).stem().string());
 
 	// Open output files
 	SWriter outS;

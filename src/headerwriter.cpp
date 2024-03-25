@@ -1,6 +1,7 @@
 /* headerwriter.cpp - Copyright (C) 2015-2024 a dinosaur (zlib, see COPYING.txt) */
 
 #include "headerwriter.hpp"
+#include <algorithm>
 
 
 template <typename T> static constexpr std::string_view DatType();
