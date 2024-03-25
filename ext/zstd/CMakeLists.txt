@@ -38,7 +38,7 @@ function (add_zstd_compilation_flags _target)
 		endif()
 		# Add noexecstack flags
 		target_link_options(${_target} PRIVATE -z noexecstack)  # LDFLAGS
-		target_compile_options(${_target} PRIVATE -Wunused-arguments -Wa,--noexecstack)  # CFLAGS & CXXFLAGS
+		target_compile_options(${_target} PRIVATE -Wunused-parameter -Wa,--noexecstack)  # CFLAGS & CXXFLAGS
 	elseif (MSVC)
 		set(ACTIVATE_MULTITHREADED_COMPILATION "ON" CACHE BOOL "activate multi-threaded compilation (/MP flag)")
 		if (CMAKE_GENERATOR MATCHES "Visual Studio" AND ACTIVATE_MULTITHREADED_COMPILATION)
