@@ -15,6 +15,7 @@ endif()
 
 # Libraries
 set(TMXLITE_STATIC_LIB ON)
+add_subdirectory(ext/miniz)
 add_subdirectory(ext/tmxlite)
 
 # Main tmx2gba sources
