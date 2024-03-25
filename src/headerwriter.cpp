@@ -38,12 +38,10 @@ void HeaderWriter::WriteObjects(const std::span<uint32_t> objData)
 }
 
 
-static std::string GuardName(const std::string_view name)
+static std::string GuardName(std::string label)
 {
-	auto upper = std::string(name);
-	for (auto& c: upper)
-		c = static_cast<char>(toupper(c));
-	return "TMX2GBA_" + upper;
+	std::transform(label.begin(), label.end(), label.begin(), ::toupper);
+	return "TMX2GBA_" + label;
 }
 
 

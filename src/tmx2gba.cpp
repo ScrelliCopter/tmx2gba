@@ -41,7 +41,7 @@ static const ArgParse::Options options =
 	                                 " specified on the command line")
 };
 
-bool ParseArgs(int argc, char** argv, Arguments& params)
+static bool ParseArgs(int argc, char** argv, Arguments& params)
 {
 	auto parser = ArgParse::ArgParser(argv[0], options, [&](int opt, const std::string_view arg)
 		-> ArgParse::ParseCtrl
@@ -117,6 +117,25 @@ bool ParseArgs(int argc, char** argv, Arguments& params)
 }
 
 
+static std::string SanitiseLabel(const std::string& ident)
+{
+	std::string out;
+	out.reserve(ident.length());
+
+	int last = '_';
+	for (int i : ident)
+	{
+		if (out.empty() && std::isdigit(i))
+			continue;
+		if (!std::isalnum(i))
+			i = '_';
+		if (i != '_' || last != '_')
+			out.push_back(i);
+		last = i;
+	}
+	return out;
+}
+
 int main(int argc, char** argv)
 {
 	Arguments p;
@@ -185,13 +204,7 @@ int main(int argc, char** argv)
 	}
 
 	// Get name from file
-	//TODO: properly sanitise
-	int slashPos = std::max(
-		static_cast<int>(p.outPath.find_last_of('/')),
-		static_cast<int>(p.outPath.find_last_of('\\')));
-	std::string name = p.outPath;
-	if (slashPos != -1)
-		name = name.substr(slashPos + 1);
+	std::string name = SanitiseLabel(std::filesystem::path(p.outPath).stem());
 
 	// Open output files
 	SWriter outS;
