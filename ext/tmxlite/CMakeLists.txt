@@ -27,6 +27,8 @@ if (MSVC)
 	target_compile_definitions(tmxlite PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
 
+target_link_libraries(tmxlite base64::base64)
+
 if (USE_BUNDLED_PUGIXML)
 	target_link_libraries(tmxlite pugixml::static)
 else()

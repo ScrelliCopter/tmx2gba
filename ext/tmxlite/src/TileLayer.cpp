@@ -26,15 +26,13 @@ source distribution.
 *********************************************************************/
 
 #include <pugixml.hpp>
-
 #ifdef USE_ZSTD
-#include <zstd.h>
+# include <zstd.h>
 #endif
-
-#include <tmxlite/FreeFuncs.hpp>
-#include <tmxlite/TileLayer.hpp>
-#include <tmxlite/detail/Log.hpp>
-
+#include "base64.h"
+#include "tmxlite/FreeFuncs.hpp"
+#include "tmxlite/TileLayer.hpp"
+#include "tmxlite/detail/Log.hpp"
 #include <sstream>
 
 using namespace tmx;
@@ -134,7 +132,7 @@ void TileLayer::parseBase64(const pugi::xml_node& node)
             {
                 std::size_t dataSize = dataString.length() * sizeof(unsigned char);
                 std::size_t result = ZSTD_decompress(byteData.data(), expectedSize, &dataString[0], dataSize);
-                
+
                 if (ZSTD_isError(result))
                 {
                     std::string err = ZSTD_getErrorName(result);
@@ -220,7 +218,7 @@ void TileLayer::parseBase64(const pugi::xml_node& node)
                         createTiles(IDs, chunk.tiles);
                         m_chunks.push_back(chunk);
                         dataCount++;
-                    }                    
+                    }
                 }
             }
         }
@@ -325,7 +323,7 @@ void TileLayer::createTiles(const std::vector<std::uint32_t>& IDs, std::vector<T
 {
     //LOG(IDs.size() != m_tileCount, "Layer tile count does not match expected size. Found: "
     //    + std::to_string(IDs.size()) + ", expected: " + std::to_string(m_tileCount));
-    
+
     static const std::uint32_t mask = 0xf0000000;
     for (const auto& id : IDs)
     {

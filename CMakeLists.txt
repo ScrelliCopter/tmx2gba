@@ -40,6 +40,8 @@ else()
 	find_package(ZSTD REQUIRED)
 endif()
 
+add_subdirectory(ext/base64)
+
 if (USE_BUNDLED_TMXLITE)
 	add_subdirectory(ext/tmxlite)
 else()
