@@ -108,7 +108,8 @@ endif()
 set_source_files_properties(${Sources} PROPERTIES LANGUAGE C)
 
 add_library(zstd STATIC ${Sources} ${Headers})
-add_library(zstd::static ALIAS zstd)
+add_library(Zstd::static ALIAS zstd)
+add_library(Zstd::Zstd ALIAS zstd)
 
 add_zstd_compilation_flags(zstd)
 

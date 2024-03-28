@@ -44,11 +44,6 @@ else()
 endif()
 
 target_compile_definitions(tmxlite PRIVATE USE_ZSTD)
-if (USE_BUNDLED_ZSTD)
-	target_link_libraries(tmxlite zstd::static)
-else()
-	target_include_directories(tmxlite PRIVATE ${ZSTD_INCLUDE_DIR})
-	target_link_libraries(tmxlite ZLIB::ZLIB ${ZSTD_LIBRARY})
-endif()
+target_link_libraries(tmxlite Zstd::Zstd)
 
 target_include_directories(tmxlite PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

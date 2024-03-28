@@ -19,7 +19,7 @@ if (ENABLE_ASAN)
 	add_link_options(-fsanitize=address -shared-libasan)
 endif()
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules/")
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 
 # Libraries
 if (USE_BUNDLED_PUGIXML)
@@ -37,7 +37,7 @@ endif()
 if (USE_BUNDLED_ZSTD)
 	add_subdirectory(ext/zstd)
 else()
-	find_package(ZSTD REQUIRED)
+	find_package(Zstd REQUIRED)
 endif()
 
 add_subdirectory(ext/base64)
