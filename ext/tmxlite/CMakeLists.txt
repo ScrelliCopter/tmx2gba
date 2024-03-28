@@ -1,40 +1,28 @@
 project(tmxlite VERSION 1.3.1)
 
-set(USE_RTTI TRUE CACHE BOOL "Use run time type information?")
-
 # includes the list of source files in the src directory
 set(PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 file(GLOB PROJECT_SRC            ${PROJECT_DIR}/*.cpp)
-file(GLOB PROJECT_HEADERS        ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp)
-file(GLOB PROJECT_HEADERS_INL    ${CMAKE_CURRENT_SOURCE_DIR}/include/*.inl)
-file(GLOB PROJECT_HEADERS_DETAIL ${CMAKE_CURRENT_SOURCE_DIR}/include/detail/*.hpp)
-set(PROJECT_SRC ${PROJECT_SRC} ${PROJECT_HEADERS} ${PROJECT_HEADERS_INL} ${PROJECT_HEADERS_DETAIL})
+file(GLOB PROJECT_HEADERS        ${CMAKE_CURRENT_SOURCE_DIR}/include/tmxlite/*.hpp)
+file(GLOB PROJECT_HEADERS_INL    ${CMAKE_CURRENT_SOURCE_DIR}/include/tmxlite/*.inl)
+file(GLOB PROJECT_HEADERS_DETAIL ${CMAKE_CURRENT_SOURCE_DIR}/include/tmxlite/detail/*.hpp)
+list(APPEND PROJECT_SRC ${PROJECT_HEADERS} ${PROJECT_HEADERS_INL} ${PROJECT_HEADERS_DETAIL})
 
-add_library(tmxlite STATIC ${PROJECT_SRC})
+add_library(${PROJECT_NAME} STATIC ${PROJECT_SRC})
 
-set_target_properties(tmxlite PROPERTIES
+set_target_properties(${PROJECT_NAME} PROPERTIES
 	CXX_STANDARD 14
 	CXX_STANDARD_REQUIRED ON)
 
-target_compile_definitions(tmxlite PRIVATE $<$<CONFIG:Debug>:_DEBUG_> TMXLITE_STATIC)
-target_compile_options(tmxlite PRIVATE -Wall)
-if (NOT USE_RTTI AND CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang|AppleClang")
-	target_compile_options(tmxlite PRIVATE -fno-rtti)
-endif()
+target_include_directories(${PROJECT_NAME} PUBLIC
+	${CMAKE_CURRENT_SOURCE_DIR}/include)
 
-# disable msvc warning
-if (MSVC)
-	target_compile_definitions(tmxlite PRIVATE _CRT_SECURE_NO_WARNINGS)
-endif()
+target_compile_options(${PROJECT_NAME} PRIVATE -Wall)
 
-target_compile_definitions(tmxlite PRIVATE USE_ZSTD)
-target_link_libraries(tmxlite base64::base64 pugixml Zstd::Zstd)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+	$<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>  # disable msvc warning
+	$<$<TARGET_EXISTS:ZLIB::ZLIB>:USE_ZLIB>)
 
-if (USE_ZLIB)
-	target_compile_definitions(tmxlite PRIVATE USE_ZLIB)
-	target_link_libraries(tmxlite ZLIB::ZLIB)
-else()
-	target_link_libraries(tmxlite miniz::miniz)
-endif()
-
-target_include_directories(tmxlite PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_link_libraries(${PROJECT_NAME} base64::base64 pugixml Zstd::Zstd
+	$<$<TARGET_EXISTS:ZLIB::ZLIB>:ZLIB::ZLIB>
+	$<$<TARGET_EXISTS:miniz::miniz>:miniz::miniz>)

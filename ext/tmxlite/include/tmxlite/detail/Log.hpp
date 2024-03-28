@@ -178,13 +178,13 @@ namespace tmx
         }
     };
 }
-#ifndef _DEBUG_
+#ifdef NDEBUG
 #define LOG(message, type)
 #else
 #define LOG(message, type) {\
 std::stringstream ss; \
 ss << message << " (" << __FILE__ << ", " << __LINE__ << ")"; \
 tmx::Logger::log(ss.str(), type);}
-#endif //_DEBUG_
+#endif //NDEBUG
 
 #endif //TMXLITE_LOGGER_HPP_

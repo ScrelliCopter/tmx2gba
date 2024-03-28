@@ -26,9 +26,7 @@ source distribution.
 *********************************************************************/
 
 #include <pugixml.hpp>
-#ifdef USE_ZSTD
-# include <zstd.h>
-#endif
+#include <zstd.h>
 #include "base64.h"
 #include "tmxlite/FreeFuncs.hpp"
 #include "tmxlite/TileLayer.hpp"
@@ -128,7 +126,6 @@ void TileLayer::parseBase64(const pugi::xml_node& node)
             byteData.insert(byteData.end(), dataString.begin(), dataString.end());
             break;
         case CompressionType::Zstd:
-#if defined USE_ZSTD
             {
                 std::size_t dataSize = dataString.length() * sizeof(unsigned char);
                 std::size_t result = ZSTD_decompress(byteData.data(), expectedSize, &dataString[0], dataSize);
@@ -140,10 +137,6 @@ void TileLayer::parseBase64(const pugi::xml_node& node)
                 }
             }
             break;
-#else
-            Logger::log("Library must be built with USE_ZSTD for Zstd compression", Logger::Type::Error);
-            return {};
-#endif
         case CompressionType::GZip:
 #ifndef USE_ZLIB
             Logger::log("Library must be built with USE_ZLIB for GZip compression", Logger::Type::Error);
