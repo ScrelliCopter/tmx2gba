@@ -25,7 +25,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake/modules")
 if (USE_BUNDLED_PUGIXML)
 	add_subdirectory(ext/pugixml)
 else()
-	find_package(PUGIXML REQUIRED)
+	find_package(pugixml REQUIRED CONFIG)
 endif()
 
 if (USE_ZLIB)
@@ -42,11 +42,7 @@ endif()
 
 add_subdirectory(ext/base64)
 
-if (USE_BUNDLED_TMXLITE)
-	add_subdirectory(ext/tmxlite)
-else()
-	find_package(TMXLITE REQUIRED)
-endif()
+add_subdirectory(ext/tmxlite)
 
 # Main tmx2gba sources
 add_subdirectory(src)

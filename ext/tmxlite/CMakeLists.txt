@@ -27,14 +27,8 @@ if (MSVC)
 	target_compile_definitions(tmxlite PRIVATE _CRT_SECURE_NO_WARNINGS)
 endif()
 
-target_link_libraries(tmxlite base64::base64)
-
-if (USE_BUNDLED_PUGIXML)
-	target_link_libraries(tmxlite pugixml::static)
-else()
-	target_include_directories(tmxlite PRIVATE ${PUGIXML_INCLUDE_DIR})
-	target_link_libraries(tmxlite ZLIB::ZLIB ${PUGIXML_LIBRARY})
-endif()
+target_compile_definitions(tmxlite PRIVATE USE_ZSTD)
+target_link_libraries(tmxlite base64::base64 pugixml Zstd::Zstd)
 
 if (USE_ZLIB)
 	target_compile_definitions(tmxlite PRIVATE USE_ZLIB)
@@ -42,8 +36,5 @@ if (USE_ZLIB)
 else()
 	target_link_libraries(tmxlite miniz::miniz)
 endif()
-
-target_compile_definitions(tmxlite PRIVATE USE_ZSTD)
-target_link_libraries(tmxlite Zstd::Zstd)
 
 target_include_directories(tmxlite PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)

@@ -23,7 +23,7 @@ jobs:
         - { name: "Windows MSVC x86", os: windows-latest, artifact: windows-x86, arch: x86 }
         - { name: "Windows MSVC x64", os: windows-latest, artifact: windows-x64 }
         - { name: "Windows MSVC ARM64", os: windows-latest, artifact: windows-arm64, arch: amd64_arm64 }
-        - { name: "Ubuntu", artifact: "linux", os: ubuntu-latest, extra: "-DUSE_BUNDLED_ZSTD:BOOL=OFF" }
+        - { name: "Ubuntu", artifact: "linux", os: ubuntu-latest, extra: "-DUSE_BUNDLED_ZSTD:BOOL=OFF -DUSE_BUNDLED_PUGIXML:BOOL=OFF" }
     runs-on: ${{matrix.config.os}}
 
     steps:
@@ -38,7 +38,7 @@ jobs:
     - uses: awalsh128/cache-apt-pkgs-action@latest
       if: ${{matrix.config.artifact == 'linux'}}
       with:
-        packages: libzstd-dev
+        packages: libzstd-dev libpugixml-dev
         version: 1.0
 
     - name: Configure CMake
