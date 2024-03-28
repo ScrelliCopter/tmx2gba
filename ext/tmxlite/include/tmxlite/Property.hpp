@@ -27,8 +27,8 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/Config.hpp>
-#include <tmxlite/Types.hpp>
+#include "tmxlite/Config.hpp"
+#include "tmxlite/Types.hpp"
 
 #include <string>
 #include <cassert>
@@ -43,14 +43,14 @@ namespace tmx
     /*!
     \brief Represents a custom property.
     Tiles, objects and layers of a tmx map may have custom
-    properties assigned to them. This class represents a 
+    properties assigned to them. This class represents a
     single property and provides access to its value, the
     type of which can be determined with getType()
     */
     class TMXLITE_EXPORT_API Property final
     {
     public:
-            
+
         enum class Type
         {
             Boolean,
@@ -62,7 +62,7 @@ namespace tmx
             Object,
             Undef
         };
-            
+
         Property();
 
         static Property fromBoolean(bool value);

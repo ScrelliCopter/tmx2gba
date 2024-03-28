@@ -27,9 +27,9 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/Config.hpp>
-#include <tmxlite/Property.hpp>
-#include <tmxlite/Types.hpp>
+#include "tmxlite/Config.hpp"
+#include "tmxlite/Property.hpp"
+#include "tmxlite/Types.hpp"
 
 #include <string>
 #include <vector>
@@ -70,13 +70,13 @@ namespace tmx
 
         std::string content; //!< actual string content
     };
-    
+
     /*!
     \brief Objects are stored in ObjectGroup layers.
     Objects may be rectangular, elliptical, polygonal or
     a polyline. Rectangular and elliptical Objects have their
     size determined via the AABB, whereas polygon and polyline
-    shapes are defined by a list of points. Objects are 
+    shapes are defined by a list of points. Objects are
     rectangular by default. Since version 1.0 Objects also
     support Text nodes.
     */
@@ -105,12 +105,12 @@ namespace tmx
         \brief Returns the unique ID of the Object
         */
         std::uint32_t getUID() const { return m_UID; }
-        
+
         /*!
         \brief Returns the name of the Object
         */
         const std::string& getName() const { return m_name; }
-        
+
         /*!
         \brief Returns the type (equal to class) of the Object, as defined in the editor Tiled < 1.9
         */
@@ -125,7 +125,7 @@ namespace tmx
         \brief Returns the position of the Object in pixels
         */
         const Vector2f& getPosition() const { return m_position; }
-        
+
         /*!
         \brief Returns the global Axis Aligned Bounding Box.
         The AABB is positioned via the left and top properties, and
@@ -133,19 +133,19 @@ namespace tmx
         the shape of the Object if it is rectangular or elliptical.
         */
         const FloatRect& getAABB() const { return m_AABB; }
-        
+
         /*!
         \brief Returns the rotation of the Object in degrees clockwise
         */
         float getRotation() const { return m_rotation; }
-        
+
         /*!
         \brief Returns the global tile ID associated with the Object
         if there is one. This is used to draw the Object (and therefore
         the Object must be rectangular)
         */
         std::uint32_t getTileID() const { return m_tileID; }
-        
+
         /*!
         \brief Returns the flip flags if the objects uses a TileID to
         draw it.
@@ -157,12 +157,12 @@ namespace tmx
         \brief Returns whether or not the Object is visible
         */
         bool visible() const { return m_visible; }
-        
+
         /*!
         \brief Returns the Shape type of the Object
         */
         Shape getShape() const { return m_shape; }
-        
+
         /*!
         \brief Returns a reference to the vector of points which
         make up the Object. If the Object is rectangular or elliptical
@@ -170,7 +170,7 @@ namespace tmx
         relative to the object position.
         */
         const std::vector<Vector2f>& getPoints() const { return m_points; }
-        
+
         /*!
         \brief Returns a reference to the vector of properties belonging to
         the Object.
@@ -188,7 +188,7 @@ namespace tmx
         Text& getText() { return m_textData; }
 
         /*!
-        \brief Returns the tileset name used by this object if it is derived 
+        \brief Returns the tileset name used by this object if it is derived
         from a template, else returns an empty string.
         If the string is not empty use it to index the unordered_map returned
         by Map::getTemplateTilesets()

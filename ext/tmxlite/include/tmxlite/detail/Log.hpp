@@ -43,18 +43,6 @@ source distribution.
 #include <windows.h>
 #endif //_MSC_VER
 
-
-#ifdef __ANDROID__
-    #include <android/log.h>
-    #include <cstring>
-
-    #define  LOG_TAG    "TMXlite-Debug" 
-    //#define  ALOG(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-
-    #define LOGI(...)  __android_log_print(ANDROID_LOG_INFO,LOG_TAG,__VA_ARGS__)
-    #define LOGE(...)  __android_log_print(ANDROID_LOG_ERROR,LOG_TAG,__VA_ARGS__)
-#endif // __ANDROID__
-
 namespace tmx
 {
     /*!
@@ -105,23 +93,10 @@ namespace tmx
             {
                 if (type == Type::Error)
                 {
-#ifdef __ANDROID__  
-                    
-                    int outstringLength = outstring.length();
-                    char outstring_chararray[outstringLength+1];
-                    std::strcpy(outstring_chararray, outstring.c_str()); 
-                    LOGE("%s",outstring_chararray);
-#endif
                     std::cerr << outstring << std::endl;
                 }
                 else
                 {
-#ifdef __ANDROID__
-                    int outstringLength = outstring.length();
-                    char outstring_chararray[outstringLength+1];
-                    std::strcpy(outstring_chararray, outstring.c_str()); 
-                    LOGI("%s", outstring_chararray);
-#endif
                     std::cout << outstring << std::endl;
                 }
                 const std::size_t maxBuffer = 30;
@@ -140,13 +115,11 @@ namespace tmx
                 std::ofstream file("output.log", std::ios::app);
                 if (file.good())
                 {
-#ifndef __ANDROID__
                     std::time_t time = std::time(nullptr);
                     auto tm = *std::localtime(&time);
                     //put_time isn't implemented by the ndk versions of the stl
                     file.imbue(std::locale());
                     file << std::put_time(&tm, "%d/%m/%y-%H:%M:%S: ");
-#endif //__ANDROID__
                     file << outstring << std::endl;
                     file.close();
                 }

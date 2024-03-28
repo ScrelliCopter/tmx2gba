@@ -25,13 +25,13 @@ and must not be misrepresented as being the original software.
 source distribution.
 *********************************************************************/
 
-#include <pugixml.hpp>
-#include <tmxlite/Object.hpp>
-#include <tmxlite/FreeFuncs.hpp>
-#include <tmxlite/Map.hpp>
-#include <tmxlite/Tileset.hpp>
-#include <tmxlite/detail/Log.hpp>
+#include "tmxlite/Object.hpp"
+#include "tmxlite/FreeFuncs.hpp"
+#include "tmxlite/Map.hpp"
+#include "tmxlite/Tileset.hpp"
+#include "tmxlite/detail/Log.hpp"
 
+#include <pugixml.hpp>
 #include <sstream>
 
 using namespace tmx;
@@ -65,7 +65,7 @@ void Object::parse(const pugi::xml_node& node, Map* map)
     {
         m_class = node.attribute("class").as_string();
     }
-    
+
     m_position.x = node.attribute("x").as_float();
     m_AABB.left = m_position.x;
     m_position.y = node.attribute("y").as_float();
@@ -272,7 +272,7 @@ void Object::parseTemplate(const std::string& path, Map* map)
         {
             m_AABB.height = obj.m_AABB.height;
         }
-        
+
         m_tilesetName = obj.m_tilesetName;
 
         if (m_name.empty())
@@ -313,7 +313,7 @@ void Object::parseTemplate(const std::string& path, Map* map)
         //compare properties and only copy ones that don't exist
         for (const auto& p : obj.m_properties)
         {
-            auto result = std::find_if(m_properties.begin(), m_properties.end(), 
+            auto result = std::find_if(m_properties.begin(), m_properties.end(),
                 [&p](const Property& a)
                 {
                     return a.getName() == p.getName();

@@ -27,8 +27,8 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/Layer.hpp>
-#include <tmxlite/Types.hpp>
+#include "tmxlite/Layer.hpp"
+#include "tmxlite/Types.hpp"
 
 namespace tmx
 {
@@ -66,7 +66,7 @@ namespace tmx
             Vertical = 0x4,
             Diagonal = 0x2
         };
-            
+
         explicit TileLayer(std::size_t);
 
         Type getType() const override { return Layer::Type::Tile; }

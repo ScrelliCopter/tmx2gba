@@ -27,9 +27,9 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/Config.hpp>
-#include <tmxlite/Layer.hpp>
-#include <tmxlite/Types.hpp>
+#include "tmxlite/Config.hpp"
+#include "tmxlite/Layer.hpp"
+#include "tmxlite/Types.hpp"
 
 namespace tmx
 {
@@ -59,7 +59,7 @@ namespace tmx
         const Colour& getTransparencyColour() const { return m_transparencyColour; }
 
         /*!
-        \brief Returns true if the image used by this layer specifically states a 
+        \brief Returns true if the image used by this layer specifically states a
         colour to use as transparency
         */
         bool hasTransparency() const { return m_hasTransparency; }
@@ -70,13 +70,13 @@ namespace tmx
         const Vector2u& getImageSize() const { return m_imageSize; }
 
         /*!
-        \brief Returns true if the image drawn by this layer is repeated along 
+        \brief Returns true if the image drawn by this layer is repeated along
         the X axis.
         */
         bool hasRepeatX() const { return m_hasRepeatX; }
 
         /*!
-        \brief Returns true if the image drawn by this layer is repeated along 
+        \brief Returns true if the image drawn by this layer is repeated along
         the Y axis.
         */
         bool hasRepeatY() const { return m_hasRepeatY; }

@@ -26,9 +26,9 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/Config.hpp>
-#include <tmxlite/Layer.hpp>
-#include <tmxlite/Types.hpp>
+#include "tmxlite/Config.hpp"
+#include "tmxlite/Layer.hpp"
+#include "tmxlite/Types.hpp"
 
 #include <vector>
 

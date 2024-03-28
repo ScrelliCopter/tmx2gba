@@ -25,16 +25,15 @@ and must not be misrepresented as being the original software.
 source distribution.
 *********************************************************************/
 
-#include <pugixml.hpp>
-#include <tmxlite/Map.hpp>
-#include <tmxlite/FreeFuncs.hpp>
-#include <tmxlite/ObjectGroup.hpp>
-#include <tmxlite/ImageLayer.hpp>
-#include <tmxlite/TileLayer.hpp>
-#include <tmxlite/LayerGroup.hpp>
-#include <tmxlite/detail/Log.hpp>
-#include <tmxlite/detail/Android.hpp>
+#include "tmxlite/Map.hpp"
+#include "tmxlite/FreeFuncs.hpp"
+#include "tmxlite/ObjectGroup.hpp"
+#include "tmxlite/ImageLayer.hpp"
+#include "tmxlite/TileLayer.hpp"
+#include "tmxlite/LayerGroup.hpp"
+#include "tmxlite/detail/Log.hpp"
 
+#include <pugixml.hpp>
 #include <queue>
 
 using namespace tmx;
@@ -136,8 +135,8 @@ bool Map::parseMapNode(const pugi::xml_node& mapNode)
         return reset();
     }
 
-    m_version.upper = STOI(attribString.substr(0, pointPos));
-    m_version.lower = STOI(attribString.substr(pointPos + 1));
+    m_version.upper = std::stoi(attribString.substr(0, pointPos));
+    m_version.lower = std::stoi(attribString.substr(pointPos + 1));
 
     m_class = mapNode.attribute("class").as_string();
 

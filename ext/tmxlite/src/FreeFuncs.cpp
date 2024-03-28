@@ -25,15 +25,14 @@ and must not be misrepresented as being the original software.
 source distribution.
 *********************************************************************/
 
+#include "tmxlite/FreeFuncs.hpp"
+#include "tmxlite/Types.hpp"
+#include "tmxlite/detail/Log.hpp"
 #ifndef USE_ZLIB
-#include "miniz.h"
+# include "miniz.h"
 #else
-#include <zlib.h>
+# include <zlib.h>
 #endif
-#include <tmxlite/FreeFuncs.hpp>
-#include <tmxlite/Types.hpp>
-#include <tmxlite/detail/Log.hpp>
-
 #include <cstring>
 
 bool tmx::decompress(const char* source, std::vector<unsigned char>& dest, std::size_t inSize, std::size_t expectedSize)
@@ -59,7 +58,7 @@ bool tmx::decompress(const char* source, std::vector<unsigned char>& dest, std::
     stream.next_out = (Bytef*)byteArray.data();
     stream.avail_out = static_cast<unsigned int>(expectedSize);
 
-    //we'd prefer to use inflateInit2 but it appears 
+    //we'd prefer to use inflateInit2 but it appears
     //to be incorrect in miniz. This is fine for zlib
     //compressed data, but gzip compressed streams
     //will fail to inflate.

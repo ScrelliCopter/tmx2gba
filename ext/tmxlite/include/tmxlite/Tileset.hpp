@@ -27,9 +27,9 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/Config.hpp>
-#include <tmxlite/Property.hpp>
-#include <tmxlite/ObjectGroup.hpp>
+#include "tmxlite/Config.hpp"
+#include "tmxlite/Property.hpp"
+#include "tmxlite/ObjectGroup.hpp"
 
 #include <string>
 #include <vector>
@@ -101,7 +101,7 @@ namespace tmx
             Vector2u imagePosition;
             std::string className;
         };
-            
+
         /*!
         \brief Terrain information with which one
         or more tiles may be associated.
@@ -247,7 +247,7 @@ namespace tmx
         /*!
          \brief Checks if a tiled ID is in the range of the first ID and the last ID
          \param id Tile ID
-         \return 
+         \return
          */
         bool hasTile(std::uint32_t id) const { return id >= m_firstGID && id <= getLastGID(); };
 

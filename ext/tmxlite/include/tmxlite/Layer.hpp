@@ -27,9 +27,9 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/Config.hpp>
-#include <tmxlite/Property.hpp>
-#include <tmxlite/Types.hpp>
+#include "tmxlite/Config.hpp"
+#include "tmxlite/Property.hpp"
+#include "tmxlite/Types.hpp"
 
 #include <string>
 #include <memory>

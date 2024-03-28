@@ -27,11 +27,11 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/Tileset.hpp>
-#include <tmxlite/Layer.hpp>
-#include <tmxlite/Property.hpp>
-#include <tmxlite/Types.hpp>
-#include <tmxlite/Object.hpp>
+#include "tmxlite/Tileset.hpp"
+#include "tmxlite/Layer.hpp"
+#include "tmxlite/Property.hpp"
+#include "tmxlite/Types.hpp"
+#include "tmxlite/Object.hpp"
 
 #include <string>
 #include <vector>
@@ -45,13 +45,13 @@ namespace tmx
     */
     struct TMXLITE_EXPORT_API Version
     {
-        //major/minor are apparently reserved by gcc            
+        //major/minor are apparently reserved by gcc
         std::uint16_t upper;
         std::uint16_t lower;
         Version(std::uint16_t maj = 0, std::uint16_t min = 0)
             : upper(maj), lower(min) {}
     };
-        
+
     enum class Orientation
     {
         Orthogonal,
@@ -93,7 +93,7 @@ namespace tmx
     class TMXLITE_EXPORT_API Map final
     {
     public:
-            
+
         Map();
         ~Map() = default;
         Map(const Map&) = delete;
@@ -203,7 +203,7 @@ namespace tmx
         /*!
         \brief Returns a vector of Property objects loaded by the map
         */
-        const std::vector<Property>& getProperties() const { return m_properties; } 
+        const std::vector<Property>& getProperties() const { return m_properties; }
 
         /*!
         \brief Returns a Hashmap of all animated tiles accessible by TileID

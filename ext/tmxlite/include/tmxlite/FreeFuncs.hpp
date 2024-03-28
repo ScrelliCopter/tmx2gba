@@ -27,9 +27,8 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/detail/Android.hpp>
-#include <tmxlite/detail/Log.hpp>
-#include <tmxlite/Types.hpp>
+#include "tmxlite/detail/Log.hpp"
+#include "tmxlite/Types.hpp"
 
 #include <string>
 #include <sstream>
@@ -96,17 +95,8 @@ namespace tmx
                 outPath = outPath.substr(0, result);
             }
         }
-// this does only work on windows
-#ifndef __ANDROID__
+
         return outPath + '/' + path;
-#endif
-
-// todo: make resolveFilePath work with subfolders on
-// android - currently only the root folder is working
-
-#ifdef __ANDROID__
-        return path;
-#endif
     }
 
     static inline std::string getFilePath(const std::string& path)

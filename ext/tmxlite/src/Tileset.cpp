@@ -25,11 +25,11 @@ and must not be misrepresented as being the original software.
 source distribution.
 *********************************************************************/
 
-#include <pugixml.hpp>
-#include <tmxlite/Tileset.hpp>
-#include <tmxlite/FreeFuncs.hpp>
-#include <tmxlite/detail/Log.hpp>
+#include "tmxlite/Tileset.hpp"
+#include "tmxlite/FreeFuncs.hpp"
+#include "tmxlite/detail/Log.hpp"
 
+#include <pugixml.hpp>
 #include <ctype.h>
 
 using namespace tmx;
@@ -59,7 +59,7 @@ void Tileset::parse(pugi::xml_node node, Map* map)
         Logger::log(attribString + ": not a tileset node! Node will be skipped.", Logger::Type::Warning);
         return;
     }
-    
+
     m_firstGID = node.attribute("firstgid").as_int();
     if (m_firstGID == 0)
     {
@@ -237,7 +237,7 @@ const Tileset::Tile* Tileset::getTile(std::uint32_t id) const
     {
         return nullptr;
     }
-    
+
     //corrects the ID. Indices and IDs are different.
     id -= m_firstGID;
     id = m_tileIndex[id];
@@ -368,12 +368,12 @@ void Tileset::parseTileNode(const pugi::xml_node& node, Map* map)
     {
         tile.className = node.attribute("class").as_string();
     }
-    
+
     //by default we set the tile's values as in an Image tileset
     tile.imagePath = m_imagePath;
     tile.imageSize = m_tileSize;
 
-    if (m_columnCount != 0) 
+    if (m_columnCount != 0)
     {
         std::uint32_t rowIndex = tile.ID % m_columnCount;
         std::uint32_t columnIndex = tile.ID / m_columnCount;

@@ -27,7 +27,7 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/Config.hpp>
+#include "tmxlite/Config.hpp"
 
 #include <cstdint>
 #include <ostream>

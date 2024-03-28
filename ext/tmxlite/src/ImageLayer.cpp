@@ -25,10 +25,11 @@ and must not be misrepresented as being the original software.
 source distribution.
 *********************************************************************/
 
+#include "tmxlite/ImageLayer.hpp"
+#include "tmxlite/FreeFuncs.hpp"
+#include "tmxlite/detail/Log.hpp"
+
 #include <pugixml.hpp>
-#include <tmxlite/ImageLayer.hpp>
-#include <tmxlite/FreeFuncs.hpp>
-#include <tmxlite/detail/Log.hpp>
 
 using namespace tmx;
 

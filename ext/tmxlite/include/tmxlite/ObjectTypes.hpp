@@ -26,7 +26,7 @@ source distribution.
 
 #pragma once
 
-#include <tmxlite/Property.hpp>
+#include "tmxlite/Property.hpp"
 
 #include <string>
 #include <vector>
