@@ -29,10 +29,14 @@ source distribution.
 #include "tmxlite/FreeFuncs.hpp"
 #include "tmxlite/TileLayer.hpp"
 #include "tmxlite/detail/Log.hpp"
+#ifndef USE_ZLIB
+# include "tmxlite/detail/gzip.hpp"
+#endif
 
 #include <pugixml.hpp>
 #include <zstd.h>
 #include <sstream>
+#include <span>
 
 using namespace tmx;
 
@@ -140,8 +144,18 @@ void TileLayer::parseBase64(const pugi::xml_node& node)
             break;
         case CompressionType::GZip:
 #ifndef USE_ZLIB
-            Logger::log("Library must be built with USE_ZLIB for GZip compression", Logger::Type::Error);
-            return {};
+            {
+                byteData.resize(expectedSize);
+                const auto source = std::span(reinterpret_cast<const uint8_t*>(dataString.data()), dataString.size());
+
+                GZipReader reader;
+                if (!reader.OpenMemory(source) || !reader.Read(byteData) || !reader.Check())
+                {
+                    LOG("Failed to decompress layer data, node skipped.", Logger::Type::Error);
+                    return {};
+                }
+            }
+            break;
 #endif
             //[[fallthrough]];
         case CompressionType::Zlib:
