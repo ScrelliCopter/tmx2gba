@@ -1,15 +1,38 @@
 project(tmxlite VERSION 1.3.1)
 
-# includes the list of source files in the src directory
-set(PROJECT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
-file(GLOB PROJECT_SRC            ${PROJECT_DIR}/*.cpp)
-file(GLOB PROJECT_SRC_DETAIL     ${PROJECT_DIR}/detail/*.cpp)
-file(GLOB PROJECT_HEADERS        ${CMAKE_CURRENT_SOURCE_DIR}/include/tmxlite/*.hpp)
-file(GLOB PROJECT_HEADERS_INL    ${CMAKE_CURRENT_SOURCE_DIR}/include/tmxlite/*.inl)
-file(GLOB PROJECT_HEADERS_DETAIL ${CMAKE_CURRENT_SOURCE_DIR}/include/tmxlite/detail/*.hpp)
-list(APPEND PROJECT_SRC ${PROJECT_SRC_DETAIL} ${PROJECT_HEADERS} ${PROJECT_HEADERS_INL} ${PROJECT_HEADERS_DETAIL})
+add_library(${PROJECT_NAME} STATIC
+	include/tmxlite/Config.hpp
+	include/tmxlite/FreeFuncs.hpp
+	include/tmxlite/ImageLayer.hpp
+	include/tmxlite/Layer.hpp
+	include/tmxlite/LayerGroup.hpp
+	include/tmxlite/Map.hpp
+	include/tmxlite/Object.hpp
+	include/tmxlite/ObjectGroup.hpp
+	include/tmxlite/ObjectTypes.hpp
+	include/tmxlite/Property.hpp
+	include/tmxlite/TileLayer.hpp
+	include/tmxlite/Tileset.hpp
+	include/tmxlite/Types.hpp
+	include/tmxlite/Types.inl
+	include/tmxlite/detail/Log.hpp
 
-add_library(${PROJECT_NAME} STATIC ${PROJECT_SRC})
+	src/FreeFuncs.cpp
+	src/ImageLayer.cpp
+	src/Map.cpp
+	src/Object.cpp
+	src/ObjectGroup.cpp
+	src/Property.cpp
+	src/TileLayer.cpp
+	src/LayerGroup.cpp
+	src/Tileset.cpp
+	src/ObjectTypes.cpp)
+
+if (NOT USE_ZLIB)
+	target_sources(${PROJECT_NAME} PRIVATE
+		include/tmxlite/detail/gzip.hpp
+		src/detail/gzip.cpp)
+endif()
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
 	CXX_STANDARD 20
