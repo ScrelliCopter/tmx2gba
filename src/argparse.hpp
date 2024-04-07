@@ -27,7 +27,7 @@ namespace ArgParse
 		}
 		static constexpr Option Required(char flag, const char* name, const char* help)
 		{
-			return { name, help, flag, false };
+			return { name, help, flag, true };
 		}
 	};
 
