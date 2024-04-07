@@ -23,7 +23,7 @@ void ArgParse::Options::ShowShortUsage(const std::string_view name, std::ostream
 	out << "Usage: " << name;
 	for (const auto& it : options)
 	{
-		if (it.argumentName)
+		if (!it.argumentName.empty())
 		{
 			// Option with argument
 			it.required
@@ -55,8 +55,8 @@ void ArgParse::Options::ShowHelpUsage(const std::string_view name, std::ostream&
 	out << ">" << std::endl;
 
 	// Determine the alignment width from the longest argument
-	auto paramLength = [](const Option& p) -> int { return p.argumentName
-		? static_cast<int>(std::strlen(p.argumentName) + 3)
+	auto paramLength = [](const Option& p) -> int { return !p.argumentName.empty()
+		? static_cast<int>(p.argumentName.length() + 3)
 		: 1; };
 	auto longestParam = std::max_element(options.begin(), options.end(),
 		[=](auto a, auto b) -> bool { return paramLength(a) < paramLength(b); });
@@ -67,7 +67,8 @@ void ArgParse::Options::ShowHelpUsage(const std::string_view name, std::ostream&
 	{
 		auto decorateArgument = [=] { return " <" + std::string(it.argumentName) + "> "; };
 		out << "  -" << it.flag
-			<< std::left << std::setw(alignWidth) << std::setfill('-') << (it.argumentName ? decorateArgument() : " ")
+			<< std::left << std::setw(alignWidth) << std::setfill('-')
+			<< (!it.argumentName.empty() ? decorateArgument() : " ")
 			<< " " << it.helpString << std::endl;
 	}
 	out << std::flush;
@@ -99,7 +100,7 @@ ArgParse::ParseCtrl ArgParse::ParserState::Next(const std::string_view token)
 			const auto opt = getOption(flagChar);
 			if (opt.has_value())
 			{
-				bool expect = opt.value().get().argumentName != nullptr;
+				bool expect = !opt.value().get().argumentName.empty();
 				if (token.length() <= 2)
 				{
 					expectArg = expect;

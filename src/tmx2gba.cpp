@@ -26,8 +26,8 @@ using ArgParse::Option;
 
 static const ArgParse::Options options =
 {
-	Option::Optional('h', nullptr,   "Display this help & command info"),
-	Option::Optional('v', nullptr,   "Display version & quit"),
+	Option::Optional('h', {},        "Display this help & command info"),
+	Option::Optional('v', {},        "Display version & quit"),
 	Option::Optional('l', "name",    "Name of layer to use (default first layer in TMX)"),
 	Option::Optional('y', "name",    "Layer for palette mappings"),
 	Option::Optional('c', "name",    "Output a separate 8bit collision map of the specified layer"),

@@ -16,16 +16,16 @@ namespace ArgParse
 {
 	struct Option
 	{
-		const char* argumentName;
-		const char* helpString;
+		std::string_view argumentName;
+		std::string_view helpString;
 		char flag;
 		bool required;
 
-		static constexpr Option Optional(char flag, const char* name, const char* help)
+		static constexpr Option Optional(char flag, const std::string_view name, const std::string_view help)
 		{
 			return { name, help, flag, false };
 		}
-		static constexpr Option Required(char flag, const char* name, const char* help)
+		static constexpr Option Required(char flag, const std::string_view name, const std::string_view help)
 		{
 			return { name, help, flag, true };
 		}
