@@ -1,6 +1,7 @@
 /* headerwriter.cpp - Copyright (C) 2015-2024 a dinosaur (zlib, see COPYING.txt) */
 
 #include "headerwriter.hpp"
+#include <algorithm>
 
 
 template <typename T> static constexpr std::string_view DatType();
@@ -8,7 +9,7 @@ template <> constexpr std::string_view DatType<uint8_t>() { return "unsigned cha
 template <> constexpr std::string_view DatType<uint16_t>() { return "unsigned short"; }
 template <> constexpr std::string_view DatType<uint32_t>() { return "unsigned int"; }
 
-void HeaderWriter::WriteSize(int width, int height)
+void HeaderWriter::WriteSize(unsigned width, unsigned height)
 {
 	stream << std::endl;
 	WriteDefine(mName + "Width", width);
@@ -38,12 +39,10 @@ void HeaderWriter::WriteObjects(const std::span<uint32_t> objData)
 }
 
 
-static std::string GuardName(const std::string_view name)
+static std::string GuardName(std::string label)
 {
-	auto upper = std::string(name);
-	for (auto& c: upper)
-		c = static_cast<char>(toupper(c));
-	return "TMX2GBA_" + upper;
+	std::transform(label.begin(), label.end(), label.begin(), ::toupper);
+	return "TMX2GBA_" + label;
 }
 
 

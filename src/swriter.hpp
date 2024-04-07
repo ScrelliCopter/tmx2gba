@@ -20,9 +20,7 @@ class SWriter
 	void WriteSymbol(const std::string_view suffix);
 
 public:
-	~SWriter();
-
-	bool Open(const std::filesystem::path& path, const std::string_view name);
+	[[nodiscard]] bool Open(const std::filesystem::path& path, const std::string_view name);
 
 	void WriteArray(const std::string_view suffix, std::span<uint8_t> data, int numCols = 16);
 	void WriteArray(const std::string_view suffix, std::span<uint16_t> data, int numCols = 16);

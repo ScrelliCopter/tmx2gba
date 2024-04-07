@@ -1,50 +1,80 @@
-/* tmxreader.hpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
+/* tmxreader.hpp - Copyright (C) 2015-2024 a dinosaur (zlib, see COPYING.txt) */
 
 #ifndef TMXREADER_HPP
 #define TMXREADER_HPP
 
-#include <istream>
-#include <vector>
 #include <string>
+#include <string_view>
 #include <cstdint>
-#include <rapidxml/rapidxml.hpp>
-
-class TmxTileset;
-class TmxLayer;
-class TmxObject;
+#include <span>
+#include <vector>
+#include <map>
+#include <optional>
 
 class TmxReader
 {
 public:
-	TmxReader() = default;
-	~TmxReader();
+	static constexpr uint8_t FLIP_HORZ = 0x8;
+	static constexpr uint8_t FLIP_VERT = 0x4;
+	static constexpr uint8_t FLIP_DIAG = 0x2;
+	static constexpr uint8_t FLIP_MASK = 0xE;
 
-	void Open(std::istream& aIn);
+	enum class Error
+	{
+		OK,
+		LOAD_FAILED,
+		NO_LAYERS,
+		GRAPHICS_NOTFOUND,
+		PALETTE_NOTFOUND,
+		COLLISION_NOTFOUND
+	};
 
-	constexpr int GetWidth() const { return mWidth; }
-	constexpr int GetHeight() const { return mHeight; }
+	[[nodiscard]] Error Open(const std::string& inPath,
+		const std::string_view graphicsName,
+		const std::string_view paletteName,
+		const std::string_view collisionName,
+		const std::map<std::string, uint32_t>& objMapping);
+	struct Size { unsigned width, height; };
 
-	inline const TmxLayer* GetLayer(size_t aId) const { return mLayers.at(aId); }
-	const TmxLayer* GetLayer(const std::string& aName) const;
-	inline std::size_t GetLayerCount() const { return mLayers.size(); }
+	[[nodiscard]] constexpr Size GetSize() const { return mSize; }
+	[[nodiscard]] constexpr size_t TileCount() const { return
+		static_cast<size_t>(mSize.width) *
+		static_cast<size_t>(mSize.height); }
 
-	inline const TmxObject* GetObject(size_t aId) const { return mObjects.at(aId); }
-	inline size_t GetObjectCount() const { return mObjects.size(); }
+	[[nodiscard]] uint32_t LidFromGid(uint32_t aGid) const;
 
-	uint32_t LidFromGid(uint32_t aGid);
+	struct Tile { uint32_t id; uint8_t flags; };
+	struct Object { unsigned id; float x, y; };
+
+	[[nodiscard]] constexpr bool HasCollisionTiles() const { return mCollision.has_value(); }
+	[[nodiscard]] constexpr bool HasObjects() const { return mObjects.has_value(); }
+
+	[[nodiscard]] constexpr const std::span<const Tile> GetGraphicsTiles() const { return mGraphics; }
+	[[nodiscard]] constexpr const std::optional<std::span<const uint32_t>> GetPaletteTiles() const
+	{
+		if (mPalette.has_value()) { return { mPalette.value() }; }
+		return std::nullopt;
+	}
+	[[nodiscard]] constexpr const std::optional<std::span<const uint32_t>> GetCollisionTiles() const
+	{
+		if (mCollision.has_value()) { return { mCollision.value() }; }
+		return std::nullopt;
+	}
+	[[nodiscard]] constexpr const std::optional<std::span<const Object>> GetObjects() const
+	{
+		if (mObjects.has_value()) { return { mObjects.value() }; }
+		return std::nullopt;
+	}
 
 private:
-	static bool DecodeMap(uint32_t* aOut, size_t aOutSize, const std::string& aBase64Dat);
-	void ReadTileset(rapidxml::xml_node<>* aXNode);
-	void ReadLayer(rapidxml::xml_node<>* aXNode);
-	void ReadObjects(rapidxml::xml_node<>* aXNode);
+	Size mSize;
 
-	int mWidth, mHeight;
-	std::vector<TmxTileset*> mTilesets;
-	std::vector<TmxLayer*>   mLayers;
-	std::vector<TmxObject*>  mObjects;
-	std::vector<uint32_t>    mGidTable;
+	std::vector<std::pair<uint32_t, uint32_t>> mGidTable;
 
+	std::vector<Tile> mGraphics;
+	std::optional<std::vector<uint32_t>> mPalette;
+	std::optional<std::vector<uint32_t>> mCollision;
+	std::optional<std::vector<Object>> mObjects;
 };
 
 #endif//TMXREADER_HPP

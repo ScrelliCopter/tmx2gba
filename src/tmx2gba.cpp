@@ -2,26 +2,24 @@
 
 #include "argparse.hpp"
 #include "tmxreader.hpp"
-#include "tmxlayer.hpp"
-#include "tmxobject.hpp"
+#include "convert.hpp"
 #include "headerwriter.hpp"
 #include "swriter.hpp"
+#include "config.h"
 #include <iostream>
 #include <map>
 #include <algorithm>
 
 
-static const char* versionStr = "tmx2gba version 0.3, (c) 2015-2022 a dinosaur";
-
 struct Arguments
 {
-	bool help = false, showVersion = false;
 	std::string inPath, outPath;
 	std::string layer, collisionlay, paletteLay;
 	std::string flagFile;
 	int offset = 0;
 	int palette = 0;
 	std::vector<std::string> objMappings;
+	bool help = false, showVersion = false;
 };
 
 using ArgParse::Option;
@@ -42,7 +40,7 @@ static const ArgParse::Options options =
 	                                 " specified on the command line")
 };
 
-bool ParseArgs(int argc, char** argv, Arguments& params)
+static bool ParseArgs(int argc, char** argv, Arguments& params)
 {
 	auto parser = ArgParse::ArgParser(argv[0], options, [&](int opt, const std::string_view arg)
 		-> ArgParse::ParseCtrl
@@ -118,6 +116,25 @@ bool ParseArgs(int argc, char** argv, Arguments& params)
 }
 
 
+static std::string SanitiseLabel(const std::string_view ident)
+{
+	std::string out;
+	out.reserve(ident.length());
+
+	int last = '_';
+	for (int i : ident)
+	{
+		if (out.empty() && std::isdigit(i))
+			continue;
+		if (!std::isalnum(i))
+			i = '_';
+		if (i != '_' || last != '_')
+			out.push_back(i);
+		last = i;
+	}
+	return out;
+}
+
 int main(int argc, char** argv)
 {
 	Arguments p;
@@ -130,7 +147,7 @@ int main(int argc, char** argv)
 	}
 	if (p.showVersion)
 	{
-		std::cout << versionStr << std::endl;
+		std::cout << "tmx2gba version " << TMX2GBA_VERSION << ", (c) 2015-2024 a dinosaur" << std::endl;
 		return 0;
 	}
 
@@ -163,52 +180,39 @@ int main(int argc, char** argv)
 
 	// Open & read input file
 	TmxReader tmx;
-	std::ifstream fin(p.inPath);
-	if (!fin.is_open())
+	switch (tmx.Open(p.inPath,
+		p.layer, p.paletteLay, p.collisionlay, objMapping))
 	{
+	case TmxReader::Error::LOAD_FAILED:
 		std::cerr << "Failed to open input file." << std::endl;
 		return 1;
-	}
-	tmx.Open(fin);
-
-	// Get layers
-	if (tmx.GetLayerCount() == 0)
-	{
-		std::cerr << "No layers found." << std::endl;
+	case TmxReader::Error::NO_LAYERS:
+		std::cerr << "No suitable tile layer found." << std::endl;
 		return 1;
-	}
-	const TmxLayer* layerGfx = p.layer.empty()
-		? tmx.GetLayer(0)
-		: tmx.GetLayer(p.layer);
-	const TmxLayer* layerCls = p.collisionlay.empty()
-		? nullptr
-		: tmx.GetLayer(p.collisionlay);
-	const TmxLayer* layerPal = p.paletteLay.empty()
-		? nullptr
-		: tmx.GetLayer(p.paletteLay);
-
-	if (layerGfx == nullptr)
-	{
-		std::cerr << "Input layer not found." << std::endl;
+	case TmxReader::Error::GRAPHICS_NOTFOUND:
+		std::cerr << "No graphics layer \"" << p.layer << "\" found." << std::endl;
 		return 1;
+	case TmxReader::Error::PALETTE_NOTFOUND:
+		std::cerr << "No palette layer \"" << p.paletteLay << "\" found." << std::endl;
+		return 1;
+	case TmxReader::Error::COLLISION_NOTFOUND:
+		std::cerr << "No collision layer \"" << p.collisionlay << "\" found." << std::endl;
+		return 1;
+	case TmxReader::Error::OK:
+		break;
 	}
 
 	// Get name from file
-	//TODO: properly sanitise
-	int slashPos = std::max(
-		static_cast<int>(p.outPath.find_last_of('/')),
-		static_cast<int>(p.outPath.find_last_of('\\')));
-	std::string name = p.outPath;
-	if (slashPos != -1)
-		name = name.substr(slashPos + 1);
+	std::string name = SanitiseLabel(std::filesystem::path(p.outPath).stem().string());
 
 	// Open output files
-	SWriter outS; HeaderWriter outH;
+	SWriter outS;
 	if (!outS.Open(p.outPath + ".s", name))
 	{
 		std::cerr << "Failed to create output file \"" << p.outPath << ".s\".";
 		return 1;
 	}
+	HeaderWriter outH;
 	if (!outH.Open(p.outPath + ".h", name))
 	{
 		std::cerr << "Failed to create output file \"" << p.outPath << ".h\".";
@@ -216,82 +220,34 @@ int main(int argc, char** argv)
 	}
 
 	// Convert to GBA-friendly charmap data
-	const uint32_t* gfxTiles = layerGfx->GetData();
-	const uint32_t* palTiles = (layerPal == nullptr) ? nullptr : layerPal->GetData();
-	std::vector<uint16_t> charDat;
-	const size_t numTiles = static_cast<size_t>(layerGfx->GetWidth()) * static_cast<size_t>(layerGfx->GetHeight());
-	charDat.reserve(numTiles);
-	for (size_t i = 0; i < numTiles; ++i)
 	{
-		uint32_t read = (*gfxTiles++);
+		std::vector<uint16_t> charDat;
+		if (!convert::ConvertCharmap(charDat, p.offset, p.palette, tmx))
+			return 1;
 
-		uint16_t tile = std::max(0, static_cast<int>(tmx.LidFromGid(read & ~TmxLayer::FLIP_MASK)) + p.offset);
-		uint8_t flags = 0x0;
-
-		// Get flipped!
-		flags |= (read & TmxLayer::FLIP_HORZ) ? 0x4 : 0x0;
-		flags |= (read & TmxLayer::FLIP_VERT) ? 0x8 : 0x0;
-
-		// Determine palette ID
-		uint32_t idx = 0;
-		if (palTiles != nullptr)
-			idx = tmx.LidFromGid((*palTiles++) & ~TmxLayer::FLIP_MASK);
-		if (idx == 0)
-			idx = p.palette + 1;
-		flags |= static_cast<uint8_t>(idx - 1) << 4;
-
-		charDat.push_back(tile | (static_cast<uint16_t>(flags) << 8));
+		// Write out charmap
+		outH.WriteSize(tmx.GetSize().width, tmx.GetSize().height);
+		outH.WriteCharacterMap(charDat);
+		outS.WriteArray("Tiles", charDat);
 	}
 
-	// Write out charmap
-	outH.WriteSize(tmx.GetWidth(), tmx.GetHeight());
-	outH.WriteCharacterMap(charDat);
-	outS.WriteArray("Tiles", charDat);
-
-	// Convert collision map & write it out
-	if (layerCls != nullptr)
+	// Convert collision map & write out
+	if (tmx.HasCollisionTiles())
 	{
 		std::vector<uint8_t> collisionDat;
-		collisionDat.reserve(layerCls->GetWidth() * layerCls->GetHeight());
+		if (!convert::ConvertCollision(collisionDat, tmx))
+			return 1;
 
-		gfxTiles = layerCls->GetData();
-		for (int i = 0; i < layerCls->GetWidth() * layerCls->GetHeight(); ++i)
-		{
-			uint8_t ucTile = static_cast<uint8_t>(tmx.LidFromGid((*gfxTiles++) & ~TmxLayer::FLIP_MASK));
-			collisionDat.push_back(ucTile);
-		}
-
-		// Try to nicely append "_collision" to the output name
-		std::string path;
-		size_t extPos = p.outPath.find_last_of('.');
-		if (extPos != std::string::npos)
-			path = p.outPath.insert(extPos, "_collision");
-		else
-			path = p.outPath + "_collision";
-
-		// Write collision
 		outH.WriteCollision(collisionDat);
 		outS.WriteArray("Collision", collisionDat, 32);
 	}
 
-	if (!p.objMappings.empty())
+	if (tmx.HasObjects())
 	{
 		std::vector<uint32_t> objDat;
-		for (size_t i = 0; i < tmx.GetObjectCount(); ++i)
-		{
-			auto obj = tmx.GetObject(i);
-			auto it = objMapping.find(obj->GetName());
-			if (it == objMapping.end())
-				continue;
+		if (!convert::ConvertObjects(objDat, tmx))
+			return 1;
 
-			float x, y;
-			obj->GetPos(x, y);
-			objDat.push_back(it->second);
-			objDat.push_back(static_cast<int>(x * 256.0f));
-			objDat.push_back(static_cast<int>(y * 256.0f));
-		}
-
-		// Write objects
 		outH.WriteObjects(objDat);
 		outS.WriteArray("Objdat", objDat);
 	}
