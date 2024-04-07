@@ -41,8 +41,7 @@ else()
 endif()
 
 add_subdirectory(ext/base64)
-
-add_subdirectory(ext/tmxlite)
+add_subdirectory(ext/rapidxml)
 
 # Main tmx2gba sources
 add_subdirectory(src)

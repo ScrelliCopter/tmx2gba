@@ -1,4 +1,4 @@
-/* tmxreader.hpp - Copyright (C) 2015-2024 a dinosaur (zlib, see COPYING.txt) */
+/* tmxreader.hpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
 
 #ifndef TMXREADER_HPP
 #define TMXREADER_HPP
@@ -10,6 +10,11 @@
 #include <vector>
 #include <map>
 #include <optional>
+#include <rapidxml/rapidxml.hpp>
+
+class TmxTileset;
+class TmxLayer;
+class TmxObject;
 
 class TmxReader
 {
@@ -34,7 +39,7 @@ public:
 		const std::string_view paletteName,
 		const std::string_view collisionName,
 		const std::map<std::string, uint32_t>& objMapping);
-	struct Size { unsigned width, height; };
+	struct Size { int width, height; };
 
 	[[nodiscard]] constexpr Size GetSize() const { return mSize; }
 	[[nodiscard]] constexpr size_t TileCount() const { return

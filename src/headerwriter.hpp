@@ -37,7 +37,7 @@ public:
 		WriteDefine(name, std::to_string(value));
 	}
 
-	void WriteSize(unsigned width, unsigned height);
+	void WriteSize(int width, int height);
 	void WriteCharacterMap(const std::span<uint16_t> charData);
 	void WriteCollision(const std::span<uint8_t> collisionData);
 	void WriteObjects(const std::span<uint32_t> objData);

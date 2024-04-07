@@ -1,5 +1,8 @@
 add_executable(tmx2gba
 	argparse.hpp argparse.cpp
+	tmxlayer.hpp
+	tmxobject.hpp
+	tmxtileset.hpp
 	tmxreader.hpp tmxreader.cpp
 	convert.hpp convert.cpp
 	headerwriter.hpp headerwriter.cpp
@@ -18,7 +21,10 @@ target_compile_options(tmx2gba PRIVATE
 	$<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -pedantic>
 	$<$<CXX_COMPILER_ID:Clang,AppleClang>:-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded>)
 
-target_link_libraries(tmx2gba tmxlite)
+target_link_libraries(${PROJECT_NAME} base64::base64 pugixml Zstd::Zstd
+	$<$<TARGET_EXISTS:ZLIB::ZLIB>:ZLIB::ZLIB>
+	$<$<TARGET_EXISTS:miniz::miniz>:miniz::miniz>)
+target_link_libraries(${PROJECT_NAME} External::rapidxml)
 
 if (TMX2GBA_DKP_INSTALL)
 	if (DEFINED ENV{DEVKITPRO})

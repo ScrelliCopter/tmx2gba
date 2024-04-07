@@ -9,7 +9,7 @@ template <> constexpr std::string_view DatType<uint8_t>() { return "unsigned cha
 template <> constexpr std::string_view DatType<uint16_t>() { return "unsigned short"; }
 template <> constexpr std::string_view DatType<uint32_t>() { return "unsigned int"; }
 
-void HeaderWriter::WriteSize(unsigned width, unsigned height)
+void HeaderWriter::WriteSize(int width, int height)
 {
 	stream << std::endl;
 	WriteDefine(mName + "Width", width);
