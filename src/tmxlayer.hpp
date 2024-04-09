@@ -25,7 +25,7 @@ public:
 	TmxLayer(int width, int height, const std::string_view name, std::vector<uint32_t>&& tileDat) noexcept
 		: mName(name), mWidth(width), mHeight(height), mTileDat(std::move(tileDat)) {}
 
-	[[nodiscard]] constexpr const std::string_view Name() const noexcept { return mName; }
+	[[nodiscard]] const std::string_view Name() const noexcept { return mName; }
 	[[nodiscard]] constexpr std::pair<int, int> TileCount() const noexcept { return { mWidth, mHeight }; }
 	[[nodiscard]] constexpr const std::span<const uint32_t> Tiles() const noexcept { return mTileDat; }
 };

@@ -14,7 +14,7 @@ public:
 	template <typename T>
 	struct Position { T x, y; };
 
-	constexpr const std::string_view Name() const noexcept { return mName; }
+	const std::string_view Name() const noexcept { return mName; }
 	constexpr Position<float> Pos() const noexcept { return mPos; }
 
 private:

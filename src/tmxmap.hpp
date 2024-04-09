@@ -7,10 +7,12 @@
 #include "tmxtileset.hpp"
 #include "tmxobject.hpp"
 #include "tmxlayer.hpp"
-#include <rapidxml/rapidxml.hpp>
 #include <vector>
 #include <span>
+#include <string>
 #include <string_view>
+
+namespace pugi { class xml_node; }
 
 class TmxMap
 {
@@ -21,12 +23,12 @@ class TmxMap
 	std::vector<TmxObject>  mObjects;
 
 	[[nodiscard]] bool Decode(std::span<uint32_t> out, const std::string_view base64);
-	void ReadTileset(rapidxml::xml_node<>* aXNode);
-	void ReadLayer(rapidxml::xml_node<>* aXNode);
-	void ReadObjects(rapidxml::xml_node<>* aXNode);
+	void ReadTileset(const pugi::xml_node& xNode);
+	void ReadLayer(const pugi::xml_node& xNode);
+	void ReadObjects(const pugi::xml_node& xNode);
 
 public:
-	[[nodiscard]] bool Load(const std::string_view inPath);
+	[[nodiscard]] bool Load(const std::string& inPath);
 
 	constexpr std::pair<int, int> TileCount() const noexcept { return { mWidth, mHeight }; }
 	constexpr const std::vector<TmxTileset>& Tilesets() const noexcept { return mTilesets; }

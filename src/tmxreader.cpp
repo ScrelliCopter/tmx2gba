@@ -88,46 +88,31 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 		mGidTable.emplace_back(set.GidRange());
 
 	// Read objects
+	/*
 	if (!objMapping.empty())
 	{
-		std::vector<Object> v;
-		for (const auto& tmxObj : objGroups.value().get())
-		{
-			auto it = objMapping.find(std::string(tmxObj.Name()));
-			if (it == objMapping.end())
-				continue;
-
-			const auto& pos = tmxObj.Pos();
-			Object obj;
-			obj.id = it->second;
-			obj.x = pos.x;
-			obj.y = pos.y;
-
-			v.emplace_back(obj);
-		}
-		/*
 		for (const auto& group : objGroups)
 		{
 			const auto& tmxObjects = group.get().Objects();
 			v.reserve(v.size() + tmxObjects.size());
 			for (const auto& tmxObj : tmxObjects)
 			{
-				auto it = objMapping.find(tmxObj.getName());
+				auto it = objMapping.find(std::string(tmxObj.Name()));
 				if (it == objMapping.end())
 					continue;
 
-				const auto& aabb = tmxObj.getAABB();
+				const auto& pos = tmxObj.Pos();
 				Object obj;
 				obj.id = it->second;
-				obj.x = aabb.left;
-				obj.y = aabb.top;
+				obj.x = pos.x;
+				obj.y = pos.y;
 
 				v.emplace_back(obj);
 			}
 		}
-		*/
 		mObjects.emplace(v);
 	}
+	*/
 
 	return Error::OK;
 }

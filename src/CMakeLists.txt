@@ -27,9 +27,7 @@ target_compile_options(tmx2gba PRIVATE
 	$<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -pedantic>
 	$<$<CXX_COMPILER_ID:Clang,AppleClang>:-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded>)
 
-target_link_libraries(tmx2gba External::rapidxml)
-	#pugixml)
-target_link_libraries(tmx2gba base64::base64 Zstd::Zstd
+target_link_libraries(tmx2gba pugixml base64::base64 Zstd::Zstd
 	$<$<TARGET_EXISTS:ZLIB::ZLIB>:ZLIB::ZLIB>
 	$<$<TARGET_EXISTS:miniz::miniz>:miniz::miniz>)
 
