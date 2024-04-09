@@ -1,4 +1,4 @@
-/* tmxreader.hpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
+/* tmxreader.hpp - Copyright (C) 2015-2024 a dinosaur (zlib, see COPYING.txt) */
 
 #ifndef TMXREADER_HPP
 #define TMXREADER_HPP
@@ -10,11 +10,6 @@
 #include <vector>
 #include <map>
 #include <optional>
-#include <rapidxml/rapidxml.hpp>
-
-class TmxTileset;
-class TmxLayer;
-class TmxObject;
 
 class TmxReader
 {

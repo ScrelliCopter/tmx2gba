@@ -4,47 +4,74 @@
 #include "tmxtileset.hpp"
 #include "tmxobject.hpp"
 #include "tmxlayer.hpp"
+#include "base64.h"
+#ifdef USE_ZLIB
+# include <zlib.h>
+#else
+# include "gzip.hpp"
+#endif
+#include <rapidxml/rapidxml.hpp>
 #include <optional>
 #include <algorithm>
+#include <ranges>
+#include <sstream>
+#include <fstream>
 
-bool TmxReader::DecodeMap(uint32_t* aOut, size_t aOutSize, const std::string& aBase64Dat)
+
+class TmxMap
+{
+	int mWidth = 0, mHeight = 0;
+
+	std::vector<TmxLayer>   mLayers;
+	std::vector<TmxTileset> mTilesets;
+	std::vector<TmxObject>  mObjects;
+
+	[[nodiscard]] bool Decode(std::span<uint32_t> out, const std::string_view base64);
+	void ReadTileset(rapidxml::xml_node<>* aXNode);
+	void ReadLayer(rapidxml::xml_node<>* aXNode);
+	void ReadObjects(rapidxml::xml_node<>* aXNode);
+
+public:
+	[[nodiscard]] bool Load(const std::string_view inPath);
+
+	constexpr std::pair<int, int> TileCount() const noexcept { return { mWidth, mHeight }; }
+	constexpr const std::vector<TmxTileset>& Tilesets() const noexcept { return mTilesets; }
+	constexpr const std::vector<TmxLayer>& Layers() const noexcept { return mLayers; }
+};
+
+
+bool TmxMap::Decode(std::span<uint32_t> out, const std::string_view base64)
 {
 	// Cut leading & trailing whitespace (including newlines)
-	auto beg = std::find_if_not(aBase64Dat.begin(), aBase64Dat.end(), ::isspace);
-	if (beg == std::end(aBase64Dat))
+	auto beg = std::find_if_not(base64.begin(), base64.end(), ::isspace);
+	if (beg == std::end(base64))
 		return false;
-	auto end = std::find_if_not(aBase64Dat.rbegin(), aBase64Dat.rend(), ::isspace);
-	std::size_t begOff = std::distance(aBase64Dat.begin(), beg);
-	std::size_t endOff = std::distance(end, aBase64Dat.rend()) - begOff;
-	auto trimmed = aBase64Dat.substr(begOff, endOff);
+	auto end = std::find_if_not(base64.rbegin(), base64.rend(), ::isspace);
+	std::size_t begOff = std::distance(base64.begin(), beg);
+	std::size_t endOff = std::distance(end, base64.rend()) - begOff;
+	const auto trimmed = base64.substr(begOff, endOff);
 
 	// Decode base64 string
 	std::string decoded = base64_decode(trimmed);
 
 	// Decompress compressed data
-	auto dstSize = static_cast<mz_ulong>(aOutSize);
+	auto dstSize = static_cast<uLongf>(sizeof(uint32_t) * out.size());
 	int res = uncompress(
-		reinterpret_cast<unsigned char*>(aOut),
+		reinterpret_cast<unsigned char*>(out.data()),
 		&dstSize,
 		reinterpret_cast<const unsigned char*>(decoded.data()),
-		static_cast<mz_ulong>(decoded.size()));
-	decoded.clear();
-	if (res < 0)
-		return false;
+		static_cast<uLong>(decoded.size()));
 
-	return true;
+	return res >= 0;
 }
 
-void TmxReader::ReadTileset(rapidxml::xml_node<>* aXNode)
+void TmxMap::ReadTileset(rapidxml::xml_node<>* aXNode)
 {
-	rapidxml::xml_attribute<>* xAttrib;
-
-	const char*	name = "";
-	const char*	source = "";
-	uint32_t firstGid = 0;
+	std::string_view name, source;
+	uint32_t firstGid = 0, lastGid = 0;
 
 	// Read name
-	xAttrib = aXNode->first_attribute("name");
+	auto xAttrib = aXNode->first_attribute("name");
 	if (xAttrib != nullptr)
 		name = xAttrib->value();
 
@@ -58,19 +85,21 @@ void TmxReader::ReadTileset(rapidxml::xml_node<>* aXNode)
 	if (xAttrib != nullptr)
 		firstGid = static_cast<uint32_t>(std::stoul(xAttrib->value()));
 
-	mTilesets.push_back(new TmxTileset(name, source, firstGid));
+	// Read last global ID
+	xAttrib = aXNode->first_attribute("lastgid");
+	if (xAttrib)
+		lastGid = static_cast<uint32_t>(std::stoul(xAttrib->value()));
+
+	mTilesets.emplace_back(TmxTileset(name, source, firstGid, lastGid));
 }
 
-void TmxReader::ReadLayer(rapidxml::xml_node<>* aXNode)
+void TmxMap::ReadLayer(rapidxml::xml_node<>* aXNode)
 {
-	rapidxml::xml_attribute<>* xAttrib;
-	const char* name    = "";
-	int         width   = 0;
-	int         height  = 0;
-	uint32_t*   tileDat = nullptr;
+	std::string_view name;
+	int width = 0, height = 0;
 
 	// Read name
-	xAttrib = aXNode->first_attribute("name");
+	auto xAttrib = aXNode->first_attribute("name");
 	if (xAttrib != nullptr)
 		name = xAttrib->value();
 
@@ -86,34 +115,29 @@ void TmxReader::ReadLayer(rapidxml::xml_node<>* aXNode)
 
 	// Read tile data
 	auto xData = aXNode->first_node("data");
-	if (xData != nullptr)
-	{
-		// TODO: don't assume base64 & zlib
-		tileDat = new uint32_t[width * height];
-		if (!DecodeMap(tileDat, width * height * sizeof(uint32_t), std::string(xData->value())))
-		{
-			delete[] tileDat;
-			tileDat = nullptr;
-		}
-	}
+	if (xData == nullptr)
+		return;
 
-	mLayers.push_back(new TmxLayer(width, height, name, tileDat));
+	// TODO: don't assume base64
+	std::vector<uint32_t> tileDat(width * height);
+	if (!Decode(tileDat, xData->value()))
+		return;
+
+	mLayers.emplace_back(TmxLayer(width, height, name, std::move(tileDat)));
 }
 
-void TmxReader::ReadObjects(rapidxml::xml_node<>* aXNode)
+void TmxMap::ReadObjects(rapidxml::xml_node<>* aXNode)
 {
 	for (auto xNode = aXNode->first_node(); xNode != nullptr; xNode = xNode->next_sibling())
 	{
 		if (strcmp(xNode->name(), "object") != 0)
 			continue;
 
-		rapidxml::xml_attribute<>* xAttrib;
-		const char*	name = "";
-		float x = 0.0f;
-		float y = 0.0f;
+		std::string_view name;
+		float x = 0.0f, y = 0.0f;
 
 		// Read name
-		xAttrib = xNode->first_attribute("name");
+		auto xAttrib = xNode->first_attribute("name");
 		if (xAttrib != nullptr)
 			name = xAttrib->value();
 
@@ -127,27 +151,16 @@ void TmxReader::ReadObjects(rapidxml::xml_node<>* aXNode)
 		if (xAttrib != nullptr)
 			y = std::stof(xAttrib->value());
 
-		mObjects.push_back(new TmxObject(name, x, y));
+		mObjects.emplace_back(TmxObject(name, x, y));
 	}
 }
 
-void TmxReader::Open(std::istream& aIn)
+bool TmxMap::Load(const std::string_view inPath)
 {
-	// Delete old tilesets
-	for (auto tileset : mTilesets)
-		delete tileset;
-	mTilesets.clear();
-
-	// Delete old layers
-	for (auto layer : mLayers)
-		delete layer;
-	mLayers.clear();
-
-	mGidTable.clear();
-
-	// Read string into a buffer
+	// Read file into a buffer
+	auto inFile = std::ifstream(inPath);
 	std::stringstream buf;
-	buf << aIn.rdbuf();
+	buf << inFile.rdbuf();
 	std::string strXml = buf.str();
 	buf.clear();
 
@@ -158,7 +171,7 @@ void TmxReader::Open(std::istream& aIn)
 	// Get map node
 	auto xMap = xDoc.first_node("map");
 	if (xMap == nullptr)
-		return;
+		return false;
 
 	// Read map attribs
 	rapidxml::xml_attribute<>* xAttrib = nullptr;
@@ -171,20 +184,16 @@ void TmxReader::Open(std::istream& aIn)
 	for (auto xNode = xMap->first_node(); xNode != nullptr; xNode = xNode->next_sibling())
 	{
 		// Read layer nodes
-		if (strcmp(xNode->name(), "layer") == 0)
+		const auto xName = xNode->name();
+		if (std::strcmp(xName, "layer") == 0)
 			ReadLayer(xNode);
-		else
-		if (strcmp(xNode->name(), "tileset") == 0)
+		else if (std::strcmp(xName, "tileset") == 0)
 			ReadTileset(xNode);
-		else
-		if (strcmp(xNode->name(), "objectgroup") == 0)
+		else if (std::strcmp(xName, "objectgroup") == 0)
 			ReadObjects(xNode);
 	}
 
-	// Generate global id table
-	for (auto tileset : mTilesets)
-		mGidTable.push_back(tileset->GetFirstGid());
-	std::sort(mGidTable.rbegin(), mGidTable.rend());
+	return true;
 }
 
 TmxReader::Error TmxReader::Open(const std::string& inPath,
@@ -193,98 +202,102 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 	const std::string_view collisionName,
 	const std::map<std::string, uint32_t>& objMapping)
 {
-	tmx::Map map;
-	if (!map.load(inPath))
+	TmxMap map;
+	if (!map.Load(inPath))
 		return Error::LOAD_FAILED;
 
-	using tmx::TileLayer;
-	using tmx::ObjectGroup;
 	using std::optional;
 	using std::reference_wrapper;
 
-	optional<reference_wrapper<const TileLayer>> layerGfx;
-	optional<reference_wrapper<const TileLayer>> layerCls;
-	optional<reference_wrapper<const TileLayer>> layerPal;
-	std::vector<reference_wrapper<const ObjectGroup>> objGroups;
+	optional<reference_wrapper<const TmxLayer>> layerGfx;
+	optional<reference_wrapper<const TmxLayer>> layerCls;
+	optional<reference_wrapper<const TmxLayer>> layerPal;
+	optional<reference_wrapper<std::vector<const TmxObject>>> objGroups;
 
 	// Read layers
-	for (const auto& layer : map.getLayers())
+	for (const auto& layer : map.Layers())
 	{
-		auto name = layer->getName();
-		if (layer->getType() == tmx::Layer::Type::Tile)
-		{
-			const auto& tileLayer = layer->getLayerAs<TileLayer>();
-			// tmxlite unfortunately has no error reporting when a layer fails to load,
-			//  empty check will suffice for the time being
-			if (tileLayer.getTiles().empty())
-				continue;
+		auto name = layer.Name();
+		//FIXME: no error reporting when a layer fails to load
+		if (layer.Tiles().empty())
+			continue;
 
-			if (layerGfx == std::nullopt && (graphicsName.empty() || name == graphicsName))
-				layerGfx = tileLayer;
-			if (!collisionName.empty() && layerCls == std::nullopt && name == collisionName)
-				layerCls = tileLayer;
-			if (!paletteName.empty() && layerPal == std::nullopt && name == paletteName)
-				layerPal = tileLayer;
-		}
+		if (!layerGfx.has_value() && (graphicsName.empty() || name == graphicsName))  { layerGfx = layer; }
+		if (!collisionName.empty() && !layerCls.has_value() && name == collisionName) { layerCls = layer; }
+		if (!paletteName.empty() && !layerPal.has_value() && name == paletteName)     { layerPal = layer; }
+		/*
 		else if (!objMapping.empty() && layer->getType() == tmx::Layer::Type::Object)
 		{
 			objGroups.emplace_back(layer->getLayerAs<ObjectGroup>());
 		}
+		*/
 	}
 
 	// Check layers
-	if (layerGfx == std::nullopt)
-	{
-		if (graphicsName.empty())
-			return Error::NO_LAYERS;
-		else
-			return Error::GRAPHICS_NOTFOUND;
-	}
-	if (layerCls == std::nullopt && !collisionName.empty())
+	if (!layerGfx.has_value())
+		return graphicsName.empty()
+			? Error::NO_LAYERS
+			: Error::GRAPHICS_NOTFOUND;
+	if (!layerCls.has_value() && !collisionName.empty())
 		return Error::GRAPHICS_NOTFOUND;
-	if (layerPal == std::nullopt && !paletteName.empty())
+	if (!layerPal.has_value() && !paletteName.empty())
 		return Error::PALETTE_NOTFOUND;
 
 	// Read TMX map
-	mSize = Size{ map.getTileCount().x, map.getTileCount().y };
+	mSize = Size{ map.TileCount().first, map.TileCount().second };
 	size_t numTiles = static_cast<size_t>(mSize.width) * static_cast<size_t>(mSize.height);
 
 	// Read graphics layer
 	mGraphics.reserve(numTiles);
-	for (auto tmxTile : layerGfx.value().get().getTiles())
-		mGraphics.emplace_back(Tile { tmxTile.ID, tmxTile.flipFlags });
+	for (auto tmxTile : layerGfx.value().get().Tiles())
+		mGraphics.emplace_back(Tile{ tmxTile & ~FLIP_MASK, static_cast<uint8_t>((tmxTile & FLIP_MASK) >> 28) });
 
 	// Read optional layers
 	if (layerPal.has_value())
 	{
 		std::vector<uint32_t> v;
 		v.reserve(numTiles);
-		for (auto tmxTile : layerPal.value().get().getTiles())
-			v.emplace_back(tmxTile.ID);
+		for (auto tmxTile : layerPal.value().get().Tiles())
+			v.emplace_back(tmxTile & ~FLIP_MASK);
 		mPalette.emplace(v);
 	}
 	if (layerCls.has_value())
 	{
 		std::vector<uint32_t> v;
 		v.reserve(numTiles);
-		for (auto tmxTile : layerCls.value().get().getTiles())
-			v.emplace_back(tmxTile.ID);
+		for (auto tmxTile : layerCls.value().get().Tiles())
+			v.emplace_back(tmxTile & ~FLIP_MASK);
 		mCollision.emplace(v);
 	}
 
 	// Read tilesets
-	const auto& tilesets = map.getTilesets();
+	const auto& tilesets = map.Tilesets();
 	mGidTable.reserve(tilesets.size());
 	for (const auto& set : tilesets)
-		mGidTable.emplace_back(std::make_pair(set.getFirstGID(), set.getLastGID()));
+		mGidTable.emplace_back(set.GidRange());
 
 	// Read objects
 	if (!objMapping.empty())
 	{
 		std::vector<Object> v;
+		for (const auto& tmxObj : objGroups.value().get())
+		{
+			auto it = objMapping.find(std::string(tmxObj.Name()));
+			if (it == objMapping.end())
+				continue;
+
+			const auto& pos = tmxObj.Pos();
+			Object obj;
+			obj.id = it->second;
+			obj.x = pos.x;
+			obj.y = pos.y;
+
+			v.emplace_back(obj);
+		}
+		/*
 		for (const auto& group : objGroups)
 		{
-			const auto& tmxObjects = group.get().getObjects();
+			const auto& tmxObjects = group.get().Objects();
 			v.reserve(v.size() + tmxObjects.size());
 			for (const auto& tmxObj : tmxObjects)
 			{
@@ -301,6 +314,7 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 				v.emplace_back(obj);
 			}
 		}
+		*/
 		mObjects.emplace(v);
 	}
 

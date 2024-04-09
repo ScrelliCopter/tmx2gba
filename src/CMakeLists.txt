@@ -1,5 +1,6 @@
 add_executable(tmx2gba
 	argparse.hpp argparse.cpp
+	$<$<NOT:$<TARGET_EXISTS:ZLIB::ZLIB>>:gzip.hpp gzip.cpp>
 	tmxlayer.hpp
 	tmxobject.hpp
 	tmxtileset.hpp
@@ -15,16 +16,21 @@ target_include_directories(tmx2gba PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 set_target_properties(tmx2gba PROPERTIES CXX_STANDARD 20)
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+	$<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>  # disable msvc warning
+	$<$<TARGET_EXISTS:ZLIB::ZLIB>:USE_ZLIB>)
+
 # Enable strong warnings
 target_compile_options(tmx2gba PRIVATE
 	$<$<CXX_COMPILER_ID:MSVC>:/Wall>
 	$<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -pedantic>
 	$<$<CXX_COMPILER_ID:Clang,AppleClang>:-Weverything -Wno-c++98-compat -Wno-c++98-compat-pedantic -Wno-padded>)
 
-target_link_libraries(${PROJECT_NAME} base64::base64 pugixml Zstd::Zstd
+target_link_libraries(tmx2gba External::rapidxml)
+	#pugixml)
+target_link_libraries(tmx2gba base64::base64 Zstd::Zstd
 	$<$<TARGET_EXISTS:ZLIB::ZLIB>:ZLIB::ZLIB>
 	$<$<TARGET_EXISTS:miniz::miniz>:miniz::miniz>)
-target_link_libraries(${PROJECT_NAME} External::rapidxml)
 
 if (TMX2GBA_DKP_INSTALL)
 	if (DEFINED ENV{DEVKITPRO})

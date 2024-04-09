@@ -1,34 +1,33 @@
-/* tmxlayer.hpp - Copyright (C) 2015-2022 a dinosaur (zlib, see COPYING.txt) */
+/* tmxlayer.hpp - Copyright (C) 2015-2024 a dinosaur (zlib, see COPYING.txt) */
 
 #ifndef TMXLAYER_HPP
 #define TMXLAYER_HPP
 
+#include <vector>
+#include <span>
 #include <string>
+#include <string_view>
 #include <cstdint>
 #include <utility>
 
 class TmxLayer
 {
+	std::string mName;
+	int mWidth, mHeight;
+	std::vector<uint32_t> mTileDat;
+
 public:
 	static constexpr uint32_t FLIP_HORZ = 0x80000000;
 	static constexpr uint32_t FLIP_VERT = 0x40000000;
 	static constexpr uint32_t FLIP_DIAG = 0x20000000;
 	static constexpr uint32_t FLIP_MASK = 0xE0000000;
 
-	TmxLayer() : mWidth(0), mHeight(0), mTileDat(nullptr) {}
-	TmxLayer(int aWidth, int aHeight, std::string aName, uint32_t* aTileDat)
-		: mName(std::move(aName)), mWidth(aWidth), mHeight(aHeight), mTileDat(aTileDat) {}
-	inline ~TmxLayer() { delete[] mTileDat; }
+	TmxLayer(int width, int height, const std::string_view name, std::vector<uint32_t>&& tileDat) noexcept
+		: mName(name), mWidth(width), mHeight(height), mTileDat(std::move(tileDat)) {}
 
-	constexpr const std::string& GetName() const { return mName; }
-	constexpr int GetWidth() const { return mWidth; }
-	constexpr int GetHeight() const { return mHeight; }
-	constexpr const uint32_t* GetData() const { return mTileDat; }
-
-private:
-	std::string mName;
-	int mWidth, mHeight;
-	uint32_t* mTileDat;
+	[[nodiscard]] constexpr const std::string_view Name() const noexcept { return mName; }
+	[[nodiscard]] constexpr std::pair<int, int> TileCount() const noexcept { return { mWidth, mHeight }; }
+	[[nodiscard]] constexpr const std::span<const uint32_t> Tiles() const noexcept { return mTileDat; }
 };
 
 #endif//TMXLAYER_HPP
