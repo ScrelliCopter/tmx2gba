@@ -4,6 +4,7 @@ add_executable(tmx2gba
 	tmxlayer.hpp
 	tmxobject.hpp
 	tmxtileset.hpp
+	tmxmap.hpp tmxmap.cpp
 	tmxreader.hpp tmxreader.cpp
 	convert.hpp convert.cpp
 	headerwriter.hpp headerwriter.cpp

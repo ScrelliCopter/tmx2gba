@@ -12,8 +12,7 @@ bool convert::ConvertCharmap(std::vector<uint16_t>& out, int idxOffset, uint32_t
 
 	const size_t numTiles = tmx.TileCount();
 	assert(gfxTiles.size() == numTiles);
-	if (palTiles.has_value())
-		assert(palTiles.value().size() == numTiles);
+	assert(!palTiles.has_value() || palTiles.value().size() == numTiles);
 
 	out.reserve(numTiles);
 	for (size_t i = 0; i < numTiles; ++i)
