@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Zlib
 // SPDX-FileCopyrightText: (c) 2024 a dinosaur
 
-#include "tmxlite/detail/gzip.hpp"
+#include "gzip.hpp"
 #include <string_view>
 
 
