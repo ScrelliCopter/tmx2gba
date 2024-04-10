@@ -22,7 +22,6 @@ class TmxMap
 	std::vector<TmxTileset> mTilesets;
 	std::vector<TmxObject>  mObjects;
 
-	[[nodiscard]] bool Decode(std::span<uint32_t> out, const std::string_view base64);
 	void ReadTileset(const pugi::xml_node& xNode);
 	void ReadLayer(const pugi::xml_node& xNode);
 	void ReadObjects(const pugi::xml_node& xNode);

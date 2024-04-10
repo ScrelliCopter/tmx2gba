@@ -9,6 +9,7 @@
 #else
 # include "gzip.hpp"
 #endif
+#include <zstd.h>
 #include <limits>
 #include <cerrno>
 #include <optional>
@@ -67,30 +68,89 @@ template <typename T>
 	return res;
 }
 
-
-bool TmxMap::Decode(std::span<uint32_t> out, const std::string_view base64)
+[[nodiscard]] static std::optional<std::string> UnBase64(const std::string_view base64)
 {
 	// Cut leading & trailing whitespace (including newlines)
 	auto beg = std::find_if_not(base64.begin(), base64.end(), ::isspace);
-	if (beg == std::end(base64))
-		return false;
+	if (beg == std::end(base64)) { return std::nullopt; }
 	auto end = std::find_if_not(base64.rbegin(), base64.rend(), ::isspace);
 	std::size_t begOff = std::distance(base64.begin(), beg);
 	std::size_t endOff = std::distance(end, base64.rend()) - begOff;
 	const auto trimmed = base64.substr(begOff, endOff);
 
 	// Decode base64 string
-	std::string decoded = base64_decode(trimmed);
+	return base64_decode(trimmed);
+}
 
-	// Decompress compressed data
-	auto dstSize = static_cast<uLongf>(sizeof(uint32_t) * out.size());
-	int res = uncompress(
-		reinterpret_cast<unsigned char*>(out.data()),
-		&dstSize,
-		reinterpret_cast<const unsigned char*>(decoded.data()),
-		static_cast<uLong>(decoded.size()));
+enum class Encoding { XML, BASE64, CSV, INVALID };
+enum class Compression { NONE, GZIP, ZLIB, ZSTD, INVALID };
 
-	return res >= 0;
+[[nodiscard]] static Encoding EncodingFromStr(const std::string_view str)
+{
+	if (str.empty())     { return Encoding::XML; }
+	if (str == "base64") { return Encoding::BASE64; }
+	if (str == "csv")    { return Encoding::CSV; }
+	return Encoding::INVALID;
+}
+
+[[nodiscard]] static Compression CompressionFromStr(const std::string_view str)
+{
+	if (str.empty())   { return Compression::NONE; }
+	if (str == "gzip") { return Compression::GZIP; }
+	if (str == "zlib") { return Compression::ZLIB; }
+	if (str == "zstd") { return Compression::ZSTD; }
+	return Compression::INVALID;
+}
+
+[[nodiscard]] static bool Decompress(Compression compression, std::span<uint32_t> out, const std::string_view decoded)
+{
+	//FIXME: lmao what is big endian
+	const std::span source(reinterpret_cast<const uint8_t*>(decoded.data()), decoded.size());
+	std::span destination(reinterpret_cast<uint8_t*>(out.data()), sizeof(uint32_t) * out.size());
+
+	switch (compression)
+	{
+	case Compression::GZIP:
+#ifndef USE_ZLIB
+		{
+			GZipReader reader;
+			if (!reader.OpenMemory(source) || !reader.Read(destination) || !reader.Check())
+				return false;
+			return true;
+		}
+#endif
+	case Compression::ZLIB:
+		{
+			// Decompress gzip/zlib data with zlib/zlib data miniz
+			auto dstSize = static_cast<uLongf>(sizeof(uint32_t) * destination.size());
+			z_stream s =
+			{
+				.next_in  = const_cast<Bytef*>(source.data()),
+				.avail_in = static_cast<unsigned int>(source.size()),
+				.next_out  = static_cast<Bytef*>(destination.data()),
+				.avail_out = static_cast<unsigned int>(destination.size()),
+				.zalloc = nullptr, .zfree = nullptr, .opaque = nullptr
+			};
+#ifdef USE_ZLIB
+			const int wbits = (compression == Compression::GZIP) ? MAX_WBITS | 16 : MAX_WBITS;
+#else
+			const int wbits = MZ_DEFAULT_WINDOW_BITS;
+#endif
+			if (inflateInit2(&s, wbits) != Z_OK)
+				return false;
+			int res = inflate(&s, Z_FINISH);
+			inflateEnd(&s);
+			return res == Z_STREAM_END;
+		}
+	case Compression::ZSTD:
+		{
+			auto res = ZSTD_decompress(
+				destination.data(), destination.size(),
+				source.data(), source.size());
+			return !ZSTD_isError(res);
+		}
+	default: return false;
+	}
 }
 
 void TmxMap::ReadTileset(const pugi::xml_node& xNode)
@@ -114,14 +174,42 @@ void TmxMap::ReadLayer(const pugi::xml_node& xNode)
 	if (width <= 0 || height <= 0)
 		return;
 
-	// Read tile data
 	auto xData = xNode.child("data");
 	if (xData.empty() || xData.first_child().empty())
 		return;
-	// TODO: don't assume base64
-	std::vector<uint32_t> tileDat(width * height);
-	if (!Decode(tileDat, xData.child_value()))
+
+	// Read data
+	std::vector<uint32_t> tileDat;
+	auto encoding = EncodingFromStr(xData.attribute("encoding").value());
+	if (encoding == Encoding::BASE64)
+	{
+		// Decode base64 string
+		auto decoded = UnBase64(xData.child_value());
+		if (!decoded.has_value())
+			return;
+
+		auto compression = CompressionFromStr(xData.attribute("compression").value());
+		if (compression == Compression::GZIP || compression == Compression::ZLIB || compression == Compression::ZSTD)
+		{
+			tileDat.resize(width * height);
+			if (!Decompress(compression, tileDat, decoded.value()))
+				return;
+		}
+		else if (compression == Compression::NONE)
+		{
+			//TODO
+			return;
+		}
+		else
+		{
+			return;
+		}
+	}
+	else
+	{
+		//TODO
 		return;
+	}
 
 	mLayers.emplace_back(TmxLayer(width, height, name, std::move(tileDat)));
 }
@@ -150,15 +238,14 @@ bool TmxMap::Load(const std::string& inPath)
 
 	// Get map node
 	auto xMap = xDoc.child("map");
-	//if (xMap == nullptr)
-	//	return false;
+	if (xMap.empty())
+		return false;
 
 	// Read map attribs
 	mWidth  = IntFromStr<int>(xMap.attribute("width").value()).value_or(0);
 	mHeight = IntFromStr<int>(xMap.attribute("height").value()).value_or(0);
 
 	// Read nodes
-	//for (auto it = xMap.begin(); it != xMap.end(); ++it)
 	for (auto it : xMap.children())
 	{
 		std::string_view name(it.name());
