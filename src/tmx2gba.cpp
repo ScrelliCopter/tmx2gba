@@ -10,6 +10,7 @@ constexpr std::string_view copyrightStr("(c) 2015-2024 a dinosaur");
 #include "convert.hpp"
 #include "headerwriter.hpp"
 #include "swriter.hpp"
+#include "strtools.hpp"
 #include "config.h"
 #include <iostream>
 #include <map>
@@ -113,26 +114,6 @@ static bool ParseArgs(int argc, char** argv, Arguments& params)
 	}
 
 	return true;
-}
-
-
-static std::string SanitiseLabel(const std::string_view ident)
-{
-	std::string out;
-	out.reserve(ident.length());
-
-	int last = '_';
-	for (int i : ident)
-	{
-		if (out.empty() && std::isdigit(i))
-			continue;
-		if (!std::isalnum(i))
-			i = '_';
-		if (i != '_' || last != '_')
-			out.push_back(i);
-		last = i;
-	}
-	return out;
 }
 
 int main(int argc, char** argv)

@@ -1,4 +1,5 @@
 add_executable(tmx2gba
+	strtools.hpp strtools.cpp
 	argparse.hpp argparse.cpp
 	$<$<NOT:$<TARGET_EXISTS:ZLIB::ZLIB>>:gzip.hpp gzip.cpp>
 	tmxlayer.hpp

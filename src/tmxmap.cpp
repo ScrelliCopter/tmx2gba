@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: (c) 2015-2024 a dinosaur
 
 #include "tmxmap.hpp"
+#include "strtools.hpp"
 #include "config.h"
 #include <pugixml.hpp>
 #include <base64.h>
@@ -11,79 +12,9 @@
 # include "gzip.hpp"
 #endif
 #include <zstd.h>
-#include <limits>
 #include <cerrno>
-#include <optional>
 #include <algorithm>
 
-
-template <typename T>
-[[nodiscard]] static std::optional<T> IntFromStr(const char* str, int base = 0) noexcept
-{
-	using std::numeric_limits;
-
-	errno = 0;
-	char* end = nullptr;
-	long res = std::strtol(str, &end, base);
-	if (errno == ERANGE) { return std::nullopt; }
-	if (str == end) { return std::nullopt; }
-	if constexpr (sizeof(long) > sizeof(T))
-	{
-		if (res > numeric_limits<T>::max() || res < numeric_limits<T>::min())
-			return std::nullopt;
-	}
-
-	return static_cast<T>(res);
-}
-
-template <typename T>
-[[nodiscard]] static std::optional<T> UintFromStr(const char* str, int base = 0) noexcept
-{
-	using std::numeric_limits;
-
-	char* end = nullptr;
-	errno = 0;
-	unsigned long res = std::strtoul(str, &end, base);
-	if (errno == ERANGE) { return std::nullopt; }
-	if (str == end) { return std::nullopt; }
-	if constexpr (numeric_limits<unsigned long>::max() > numeric_limits<T>::max())
-	{
-		if (res > numeric_limits<T>::max()) { return std::nullopt; }
-	}
-
-	return static_cast<T>(res);
-}
-
-template <typename T>
-[[nodiscard]] static std::optional<T> FloatFromStr(const char* str) noexcept
-{
-	char* end = nullptr;
-	T res;
-	errno = 0;
-	if constexpr (std::is_same_v<T, float>)
-		res = std::strtof(str, &end);
-	else
-		res = static_cast<T>(std::strtod(str, &end));
-	if (errno == ERANGE) { return std::nullopt; }
-	if (str == end) { return std::nullopt; }
-
-	return res;
-}
-
-[[nodiscard]] static std::optional<std::string> UnBase64(const std::string_view base64)
-{
-	// Cut leading & trailing whitespace (including newlines)
-	auto beg = std::find_if_not(base64.begin(), base64.end(), ::isspace);
-	if (beg == std::end(base64)) { return std::nullopt; }
-	auto end = std::find_if_not(base64.rbegin(), base64.rend(), ::isspace);
-	auto begOff = std::distance(base64.begin(), beg);
-	auto endOff = std::distance(end, base64.rend()) - begOff;
-	using size_type = std::string::size_type;
-	const auto trimmed = base64.substr(static_cast<size_type>(begOff), static_cast<size_type>(endOff));
-
-	// Decode base64 string
-	return base64_decode(trimmed);
-}
 
 enum class Encoding { XML, BASE64, CSV, INVALID };
 enum class Compression { NONE, GZIP, ZLIB, ZSTD, INVALID };
@@ -104,6 +35,7 @@ enum class Compression { NONE, GZIP, ZLIB, ZSTD, INVALID };
 	if (str == "zstd") { return Compression::ZSTD; }
 	return Compression::INVALID;
 }
+
 
 [[nodiscard]] static bool Decompress(Compression compression, std::span<uint32_t> out, const std::string_view decoded)
 {
@@ -192,22 +124,22 @@ void TmxMap::ReadLayer(const pugi::xml_node& xNode)
 	if (encoding == Encoding::BASE64)
 	{
 		// Decode base64 string
-		auto decoded = UnBase64(xData.child_value());
-		if (!decoded.has_value())
+		auto decoded = base64_decode(TrimWhitespace(xData.child_value()));
+		if (decoded.empty())
 			return;
 
 		auto compression = CompressionFromStr(xData.attribute("compression").value());
 		if (compression == Compression::GZIP || compression == Compression::ZLIB || compression == Compression::ZSTD)
 		{
 			tileDat.resize(numTiles);
-			if (!Decompress(compression, tileDat, decoded.value()))
+			if (!Decompress(compression, tileDat, decoded))
 				return;
 		}
 		else if (compression == Compression::NONE)
 		{
 			tileDat.reserve(numTiles);
-			const auto end = decoded.value().end();
-			for (auto it = decoded.value().begin(); it < end - 3;)
+			const auto end = decoded.end();
+			for (auto it = decoded.begin(); it < end - 3;)
 			{
 				uint32_t tile = static_cast<uint32_t>(static_cast<uint8_t>(*it++));
 				tile |= static_cast<uint32_t>(static_cast<uint8_t>(*it++)) << 8u;
