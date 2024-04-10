@@ -204,13 +204,18 @@ void TmxMap::ReadLayer(const pugi::xml_node& xNode)
 		}
 		else if (compression == Compression::NONE)
 		{
-			//TODO
-			return;
+			tileDat.reserve(numTiles);
+			const auto end = decoded.value().end();
+			for (auto it = decoded.value().begin(); it < end - 3;)
+			{
+				uint32_t tile = static_cast<uint32_t>(static_cast<uint8_t>(*it++));
+				tile |= static_cast<uint32_t>(static_cast<uint8_t>(*it++)) << 8u;
+				tile |= static_cast<uint32_t>(static_cast<uint8_t>(*it++)) << 16u;
+				tile |= static_cast<uint32_t>(static_cast<uint8_t>(*it++)) << 24u;
+				tileDat.emplace_back(tile);
+			}
 		}
-		else
-		{
-			return;
-		}
+		else { return; }
 	}
 	else if (encoding == Encoding::XML)
 	{
@@ -218,11 +223,25 @@ void TmxMap::ReadLayer(const pugi::xml_node& xNode)
 		std::ranges::transform(xData.children("tile"), std::back_inserter(tileDat), [](auto it)
 		-> uint32_t { return UintFromStr<uint32_t>(it.attribute("gid").value()).value_or(0); });
 	}
-	else
+	else if (encoding == Encoding::CSV)
 	{
-		//TODO
-		return;
+		tileDat.reserve(numTiles);
+		const std::string_view csv(xData.child_value());
+
+		std::string::size_type pos = 0;
+		while (true)
+		{
+			// TODO: check if this has a problem on other locales?
+			auto gid = UintFromStr<uint32_t>(csv.substr(pos).data());
+			if (gid.has_value())
+				tileDat.emplace_back(gid.value());
+
+			if ((pos = csv.find(',', pos)) == std::string::npos)
+				break;
+			++pos;
+		}
 	}
+	else { return; }
 
 	mLayers.emplace_back(TmxLayer(width, height, name, std::move(tileDat)));
 }
