@@ -1,4 +1,5 @@
-/* argparse.cpp - Copyright (C) 2024 a dinosaur (zlib, see COPYING.txt) */
+// SPDX-License-Identifier: Zlib
+// SPDX-FileCopyrightText: (c) 2024 a dinosaur
 
 #include "argparse.hpp"
 #include <optional>

@@ -1,4 +1,5 @@
-/* converter.hpp - Copyright (C) 2024 a dinosaur (zlib, see COPYING.txt) */
+// SPDX-License-Identifier: Zlib
+// SPDX-FileCopyrightText: (c) 2024 a dinosaur
 
 #ifndef CONVERT_HPP
 #define CONVERT_HPP

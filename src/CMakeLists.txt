@@ -20,8 +20,7 @@ set_target_properties(tmx2gba PROPERTIES
 	CXX_STANDARD_REQUIRED ON)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
-	$<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>  # disable msvc warning
-	$<$<TARGET_EXISTS:ZLIB::ZLIB>:USE_ZLIB>)
+	$<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>)  # Disable msvc warning
 
 # Enable strong warnings
 target_compile_options(tmx2gba PRIVATE

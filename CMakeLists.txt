@@ -8,7 +8,6 @@ project(tmx2gba
 option(USE_ZLIB            "Use zlib instead of bundled miniz" "${UNIX}")
 option(USE_BUNDLED_PUGIXML "Use bundled PUGIXML" ON)
 option(USE_BUNDLED_ZSTD    "Use bundled libzstd" ON)
-option(USE_BUNDLED_TMXLITE "Use bundled tmxlite" ON)
 
 option(TMX2GBA_DKP_INSTALL "Install into DEVKITPRO prefix" OFF)
 

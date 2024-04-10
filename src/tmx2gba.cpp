@@ -1,4 +1,6 @@
-/* tmx2gba.cpp - Copyright (C) 2015-2024 a dinosaur (zlib, see COPYING.txt) */
+// tmx2gba.cpp - main entry point
+// SPDX-License-Identifier: Zlib
+// SPDX-FileCopyrightText: (c) 2015-2024 a dinosaur
 
 #include "argparse.hpp"
 #include "tmxreader.hpp"

@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: (c) 2015-2024 a dinosaur
 
 #include "tmxmap.hpp"
+#include "config.h"
 #include <pugixml.hpp>
 #include <base64.h>
 #ifdef USE_ZLIB

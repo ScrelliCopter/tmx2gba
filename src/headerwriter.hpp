@@ -1,4 +1,5 @@
-/* headerwriter.hpp - Copyright (C) 2015-2024 a dinosaur (zlib, see COPYING.txt) */
+// SPDX-License-Identifier: Zlib
+// SPDX-FileCopyrightText: (c) 2015-2024 a dinosaur
 
 #ifndef HEADERWRITER_HPP
 #define HEADERWRITER_HPP

@@ -2,5 +2,6 @@
 #define CONFIG_H
 
 #define TMX2GBA_VERSION "@PROJECT_VERSION@"
+#cmakedefine USE_ZLIB
 
 #endif//CONFIG_H

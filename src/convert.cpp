@@ -1,4 +1,5 @@
-/* converter.hpp - Copyright (C) 2015-2024 a dinosaur (zlib, see COPYING.txt) */
+// SPDX-License-Identifier: Zlib
+// SPDX-FileCopyrightText: (c) 2015-2024 a dinosaur
 
 #include "convert.hpp"
 #include "tmxreader.hpp"
