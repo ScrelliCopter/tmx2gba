@@ -15,7 +15,9 @@ configure_file(config.h.in config.h @ONLY)
 target_sources(tmx2gba PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/config.h)
 target_include_directories(tmx2gba PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
-set_target_properties(tmx2gba PROPERTIES CXX_STANDARD 20)
+set_target_properties(tmx2gba PROPERTIES
+	CXX_STANDARD 20
+	CXX_STANDARD_REQUIRED ON)
 
 target_compile_definitions(${PROJECT_NAME} PRIVATE
 	$<$<BOOL:${MSVC}>:_CRT_SECURE_NO_WARNINGS>  # disable msvc warning

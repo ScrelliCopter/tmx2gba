@@ -13,6 +13,7 @@
 #include <limits>
 #include <cerrno>
 #include <optional>
+#include <algorithm>
 
 
 template <typename T>
