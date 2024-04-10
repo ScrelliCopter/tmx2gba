@@ -61,7 +61,7 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 	// Read graphics layer
 	mGraphics.reserve(numTiles);
 	for (auto tmxTile : layerGfx.value().get().Tiles())
-		mGraphics.emplace_back(Tile{ tmxTile & ~FLIP_MASK, static_cast<uint8_t>((tmxTile & FLIP_MASK) >> 28) });
+		mGraphics.emplace_back(Tile{ tmxTile & ~TmxLayer::FLIP_MASK, static_cast<uint8_t>((tmxTile & TmxLayer::FLIP_MASK) >> 28) });
 
 	// Read optional layers
 	if (layerPal.has_value())
@@ -69,7 +69,7 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 		std::vector<uint32_t> v;
 		v.reserve(numTiles);
 		for (auto tmxTile : layerPal.value().get().Tiles())
-			v.emplace_back(tmxTile & ~FLIP_MASK);
+			v.emplace_back(tmxTile & ~TmxLayer::FLIP_MASK);
 		mPalette.emplace(v);
 	}
 	if (layerCls.has_value())
@@ -77,15 +77,15 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 		std::vector<uint32_t> v;
 		v.reserve(numTiles);
 		for (auto tmxTile : layerCls.value().get().Tiles())
-			v.emplace_back(tmxTile & ~FLIP_MASK);
+			v.emplace_back(tmxTile & ~TmxLayer::FLIP_MASK);
 		mCollision.emplace(v);
 	}
 
 	// Read tilesets
 	const auto& tilesets = map.Tilesets();
 	mGidTable.reserve(tilesets.size());
-	for (const auto& set : tilesets)
-		mGidTable.emplace_back(set.GidRange());
+	std::ranges::transform(tilesets, std::back_inserter(mGidTable),
+		[](const auto& it) { return it.GidRange(); });
 
 	// Read objects
 	/*

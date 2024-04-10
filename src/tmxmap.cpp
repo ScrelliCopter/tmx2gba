@@ -75,9 +75,10 @@ template <typename T>
 	auto beg = std::find_if_not(base64.begin(), base64.end(), ::isspace);
 	if (beg == std::end(base64)) { return std::nullopt; }
 	auto end = std::find_if_not(base64.rbegin(), base64.rend(), ::isspace);
-	std::size_t begOff = std::distance(base64.begin(), beg);
-	std::size_t endOff = std::distance(end, base64.rend()) - begOff;
-	const auto trimmed = base64.substr(begOff, endOff);
+	auto begOff = std::distance(base64.begin(), beg);
+	auto endOff = std::distance(end, base64.rend()) - begOff;
+	using size_type = std::string::size_type;
+	const auto trimmed = base64.substr(static_cast<size_type>(begOff), static_cast<size_type>(endOff));
 
 	// Decode base64 string
 	return base64_decode(trimmed);
@@ -123,7 +124,6 @@ enum class Compression { NONE, GZIP, ZLIB, ZSTD, INVALID };
 	case Compression::ZLIB:
 		{
 			// Decompress gzip/zlib data with zlib/zlib data miniz
-			auto dstSize = static_cast<uLongf>(sizeof(uint32_t) * destination.size());
 			z_stream s =
 			{
 				.next_in  = const_cast<Bytef*>(source.data()),
@@ -150,7 +150,11 @@ enum class Compression { NONE, GZIP, ZLIB, ZSTD, INVALID };
 				source.data(), source.size());
 			return !ZSTD_isError(res);
 		}
-	default: return false;
+	// Define all labels to shut up linters
+	case Compression::NONE:
+	case Compression::INVALID:
+	//default:
+		return false;
 	}
 }
 
@@ -160,9 +164,11 @@ void TmxMap::ReadTileset(const pugi::xml_node& xNode)
 	std::string_view source = xNode.attribute("source").value();
 
 	auto firstGid = UintFromStr<uint32_t>(xNode.attribute("firstgid").value()).value_or(0);
-	auto lastGid  = UintFromStr<uint32_t>(xNode.attribute("lastgid").value()).value_or(0);
+	auto numTiles = UintFromStr<uint32_t>(xNode.attribute("tilecount").value()).value_or(0);
+	if (numTiles == 0)
+		return; // FIXME: warn about empty tilesets or something
 
-	mTilesets.emplace_back(TmxTileset(name, source, firstGid, lastGid));
+	mTilesets.emplace_back(TmxTileset(name, source, firstGid, numTiles));
 }
 
 void TmxMap::ReadLayer(const pugi::xml_node& xNode)
@@ -172,8 +178,8 @@ void TmxMap::ReadLayer(const pugi::xml_node& xNode)
 	// Read layer size
 	int width  = IntFromStr<int>(xNode.attribute("width").value()).value_or(0);
 	int height = IntFromStr<int>(xNode.attribute("height").value()).value_or(0);
-	if (width <= 0 || height <= 0)
-		return;
+	if (width <= 0 || height <= 0) { return; }
+	const auto numTiles = static_cast<size_t>(width) * static_cast<size_t>(height);
 
 	auto xData = xNode.child("data");
 	if (xData.empty() || xData.first_child().empty())
@@ -192,7 +198,7 @@ void TmxMap::ReadLayer(const pugi::xml_node& xNode)
 		auto compression = CompressionFromStr(xData.attribute("compression").value());
 		if (compression == Compression::GZIP || compression == Compression::ZLIB || compression == Compression::ZSTD)
 		{
-			tileDat.resize(width * height);
+			tileDat.resize(numTiles);
 			if (!Decompress(compression, tileDat, decoded.value()))
 				return;
 		}
@@ -205,6 +211,12 @@ void TmxMap::ReadLayer(const pugi::xml_node& xNode)
 		{
 			return;
 		}
+	}
+	else if (encoding == Encoding::XML)
+	{
+		tileDat.reserve(numTiles);
+		std::ranges::transform(xData.children("tile"), std::back_inserter(tileDat), [](auto it)
+		-> uint32_t { return UintFromStr<uint32_t>(it.attribute("gid").value()).value_or(0); });
 	}
 	else
 	{
