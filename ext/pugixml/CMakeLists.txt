@@ -22,6 +22,7 @@ add_library(pugixml STATIC
 	src/pugixml.hpp
 	src/pugixml.cpp)
 add_library(pugixml::static ALIAS pugixml)
+add_library(pugixml::pugixml ALIAS pugixml)
 
 set_target_properties(pugixml PROPERTIES
 	CXX_STANDARD_REQUIRED ON
