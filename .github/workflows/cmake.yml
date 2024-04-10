@@ -54,4 +54,4 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: ${{env.ARTIFACT_NAME}}-${{matrix.config.artifact}}
-        path: build/src/${{env.ARTIFACT_NAME}}${{startsWith(matrix.config.os, 'windows') && '.exe' || ''}}
+        path: build/src/${{env.ARTIFACT_NAME}}${{startsWith(matrix.config.os, 'windows') && '.[ep][xd][eb]' || ''}}
