@@ -10,13 +10,12 @@ tmx2gba is a simple command line utility that converts [Tiled](http://www.mapedi
 
 ## Usage ##
 ```
-tmx2gba [-hv] [-r offset] [-lyc name] [-p 0-15] [-m name;id] <-i inpath> <-o outpath>
+tmx2gba [-h] [-r offset] [-lyc name] [-p 0-15] [-m name;id] <-i inpath> <-o outpath>
 ```
 
 | Command      | Required | Notes                                                                              |
 |--------------|----------|------------------------------------------------------------------------------------|
-| -h           | N/A      | Display help & command info                                                        |
-| -v           | No       | Display version & quit                                                             |
+| -h           | N/A      | Display program help & command info then quit                                      |
 | -l (name)    | No       | Name of layer to use (default first layer in TMX)                                  |
 | -y (name)    | No       | Layer for palette mappings                                                         |
 | -c (name)    | No       | Output a separate 8bit collision map of the specified layer                        |

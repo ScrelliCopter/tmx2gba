@@ -2,6 +2,9 @@
 // SPDX-License-Identifier: Zlib
 // SPDX-FileCopyrightText: (c) 2015-2024 a dinosaur
 
+#include <string_view>
+constexpr std::string_view copyrightStr("(c) 2015-2024 a dinosaur");
+
 #include "argparse.hpp"
 #include "tmxreader.hpp"
 #include "convert.hpp"
@@ -21,15 +24,14 @@ struct Arguments
 	int offset = 0;
 	int palette = 0;
 	std::vector<std::string> objMappings;
-	bool help = false, showVersion = false;
+	bool help = false;
 };
 
 using ArgParse::Option;
 
 static const ArgParse::Options options =
 {
-	Option::Optional('h', {},        "Display this help & command info"),
-	Option::Optional('v', {},        "Display version & quit"),
+	Option::Optional('h', {},        "Display help & command info"),
 	Option::Optional('l', "name",    "Name of layer to use (default first layer in TMX)"),
 	Option::Optional('y', "name",    "Layer for palette mappings"),
 	Option::Optional('c', "name",    "Output a separate 8bit collision map of the specified layer"),
@@ -53,7 +55,6 @@ static bool ParseArgs(int argc, char** argv, Arguments& params)
 			switch (opt)
 			{
 			case 'h': params.help = true;        return ParseCtrl::QUIT_EARLY;
-			case 'v': params.showVersion = true; return ParseCtrl::QUIT_EARLY;
 			case 'l': params.layer = arg;        return ParseCtrl::CONTINUE;
 			case 'c': params.collisionlay = arg; return ParseCtrl::CONTINUE;
 			case 'y': params.paletteLay = arg;   return ParseCtrl::CONTINUE;
@@ -71,11 +72,8 @@ static bool ParseArgs(int argc, char** argv, Arguments& params)
 		catch (std::out_of_range const&) { return ParseCtrl::QUIT_ERR_RANGE; }
 	});
 
-	if (!parser.Parse(std::span(argv + 1, argc - 1)))
-		return false;
-
-	if (params.help || params.showVersion)
-		return true;
+	if (!parser.Parse(std::span(argv + 1, argc - 1))) { return false; }
+	if (params.help) { return true; }
 
 	if (!params.flagFile.empty())
 	{
@@ -140,16 +138,11 @@ static std::string SanitiseLabel(const std::string_view ident)
 int main(int argc, char** argv)
 {
 	Arguments p;
-	if (!ParseArgs(argc, argv, p))
-		return 1;
+	if (!ParseArgs(argc, argv, p)) { return 1; }
 	if (p.help)
 	{
+		std::cout << "tmx2gba v" << TMX2GBA_VERSION << ", " << copyrightStr << std::endl;
 		options.ShowHelpUsage(argv[0], std::cout);
-		return 0;
-	}
-	if (p.showVersion)
-	{
-		std::cout << "tmx2gba version " << TMX2GBA_VERSION << ", (c) 2015-2024 a dinosaur" << std::endl;
 		return 0;
 	}
 
@@ -237,8 +230,7 @@ int main(int argc, char** argv)
 	if (tmx.HasCollisionTiles())
 	{
 		std::vector<uint8_t> collisionDat;
-		if (!convert::ConvertCollision(collisionDat, tmx))
-			return 1;
+		if (!convert::ConvertCollision(collisionDat, tmx)) { return 1; }
 
 		outH.WriteCollision(collisionDat);
 		outS.WriteArray("Collision", collisionDat, 32);
@@ -247,8 +239,7 @@ int main(int argc, char** argv)
 	if (tmx.HasObjects())
 	{
 		std::vector<uint32_t> objDat;
-		if (!convert::ConvertObjects(objDat, tmx))
-			return 1;
+		if (!convert::ConvertObjects(objDat, tmx)) { return 1; }
 
 		outH.WriteObjects(objDat);
 		outS.WriteArray("Objdat", objDat);
