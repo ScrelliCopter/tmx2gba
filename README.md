@@ -59,7 +59,6 @@ sudo cmake --install build
 
 ## License ##
 [tmx2gba](https://github.com/ScrelliCopter/tmx2gba) is licensed under the [Zlib license](COPYING.txt).
-- A modified [tmxlite](https://github.com/fallahn/tmxlite) is licensed under the [Zlib license](ext/tmxlite/LICENSE).
 - [pugixml](https://pugixml.org/) is licensed under the [MIT license](ext/pugixml/LICENSE.md).
 - [René Nyffenegger's base64.cpp](https://github.com/ReneNyffenegger/cpp-base64) is licensed under the [Zlib license](ext/base64/LICENSE).
 - [miniz](https://github.com/richgel999/miniz) is licensed under the [MIT license](ext/miniz/LICENSE).
