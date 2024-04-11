@@ -21,10 +21,7 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 	using std::optional;
 	using std::reference_wrapper;
 
-	optional<reference_wrapper<const TmxLayer>> layerGfx;
-	optional<reference_wrapper<const TmxLayer>> layerCls;
-	optional<reference_wrapper<const TmxLayer>> layerPal;
-	optional<reference_wrapper<std::vector<const TmxObject>>> objGroups;
+	optional<reference_wrapper<const TmxLayer>> layerGfx, layerCls, layerPal;
 
 	// Read layers
 	for (const auto& layer : map.Layers())
@@ -37,12 +34,6 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 		if (!layerGfx.has_value() && (graphicsName.empty() || name == graphicsName))  { layerGfx = layer; }
 		if (!collisionName.empty() && !layerCls.has_value() && name == collisionName) { layerCls = layer; }
 		if (!paletteName.empty() && !layerPal.has_value() && name == paletteName)     { layerPal = layer; }
-		/*
-		else if (!objMapping.empty() && layer->getType() == tmx::Layer::Type::Object)
-		{
-			objGroups.emplace_back(layer->getLayerAs<ObjectGroup>());
-		}
-		*/
 	}
 
 	// Check layers
@@ -89,31 +80,30 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 		[](const auto& it) { return it.GidRange(); });
 
 	// Read objects
-	/*
-	if (!objMapping.empty())
+	if (!map.ObjectGroups().empty())
 	{
-		for (const auto& group : objGroups)
+		std::vector<Object> objs;
+		for (const auto& group : map.ObjectGroups())
 		{
-			const auto& tmxObjects = group.get().Objects();
-			v.reserve(v.size() + tmxObjects.size());
+			const auto& tmxObjects = group.Objects();
+			objs.reserve(objs.size() + tmxObjects.size());
 			for (const auto& tmxObj : tmxObjects)
 			{
 				auto it = objMapping.find(std::string(tmxObj.Name()));
 				if (it == objMapping.end())
 					continue;
 
-				const auto& pos = tmxObj.Pos();
-				Object obj;
-				obj.id = it->second;
-				obj.x = pos.x;
-				obj.y = pos.y;
-
-				v.emplace_back(obj);
+				const auto& aabb = tmxObj.Box();
+				objs.emplace_back(Object
+				{
+					.id = it->second,
+					.x = aabb.x,
+					.y = aabb.y
+				});
 			}
 		}
-		mObjects.emplace(v);
+		mObjects.emplace(objs);
 	}
-	*/
 
 	return Error::OK;
 }

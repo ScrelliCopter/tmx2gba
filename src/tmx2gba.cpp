@@ -198,8 +198,7 @@ int main(int argc, char** argv)
 	// Convert to GBA-friendly charmap data
 	{
 		std::vector<uint16_t> charDat;
-		if (!convert::ConvertCharmap(charDat, p.offset, p.palette, tmx))
-			return 1;
+		if (!convert::ConvertCharmap(charDat, p.offset, p.palette, tmx)) { return 1; }
 
 		// Write out charmap
 		outH.WriteSize(tmx.GetSize().width, tmx.GetSize().height);

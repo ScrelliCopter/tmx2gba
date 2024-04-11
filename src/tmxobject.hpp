@@ -5,22 +5,39 @@
 #define TMXOBJECT_HPP
 
 #include <string>
+#include <string_view>
+#include <vector>
 #include <utility>
 
 class TmxObject
 {
 public:
-	TmxObject(std::string_view name, float x, float y) : mName(name), mPos{ x, y } {}
-
 	template <typename T>
-	struct Position { T x, y; };
+	struct AABB { T x, y, w, h; };
 
+	TmxObject(int id, std::string_view name, AABB<float>&& box) : mId(id), mName(name), mBox(std::move(box)) {}
+
+	constexpr int Id() const noexcept { return mId; }
 	const std::string_view Name() const noexcept { return mName; }
-	constexpr Position<float> Pos() const noexcept { return mPos; }
+	constexpr const AABB<float>& Box() const noexcept { return mBox; }
 
 private:
+	int mId;
 	std::string mName;
-	Position<float> mPos;
+	AABB<float> mBox;
+};
+
+class TmxObjectGroup
+{
+	std::string mName;
+	std::vector<TmxObject> mObjects;
+
+public:
+	TmxObjectGroup(std::string_view name, std::vector<TmxObject>&& objects)
+		: mName(name), mObjects(std::move(objects)) {}
+
+	const std::string_view Name() const noexcept { return mName; }
+	constexpr const std::vector<TmxObject>& Objects() const noexcept { return mObjects; }
 };
 
 #endif//TMXOBJECT_HPP

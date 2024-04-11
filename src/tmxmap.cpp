@@ -180,18 +180,30 @@ void TmxMap::ReadLayer(const pugi::xml_node& xNode)
 	mLayers.emplace_back(TmxLayer(width, height, name, std::move(tileDat)));
 }
 
-void TmxMap::ReadObjects(const pugi::xml_node& xNode)
+void TmxMap::ReadObjectGroup(const pugi::xml_node& xNode)
 {
-	for (const auto it : xNode.children("object"))
+	std::string_view name(xNode.value());
+	std::vector<TmxObject> objects;
+
+	const auto xObjects = xNode.children("object");
+	//mObjects.reserve(xObjects.size())
+	for (const auto it : xObjects)
 	{
+		int id = IntFromStr<int>(it.attribute("id").value()).value_or(0);
 		std::string_view name = it.attribute("name").value();
 
-		// Read position
+		// Read axis-aligned bounding box
 		auto x = FloatFromStr<float>(it.attribute("x").value()).value_or(0.0f);
 		auto y = FloatFromStr<float>(it.attribute("y").value()).value_or(0.0f);
+		auto width  = FloatFromStr<float>(it.attribute("width").value()).value_or(0.0f);
+		auto height = FloatFromStr<float>(it.attribute("height").value()).value_or(0.0f);
 
-		mObjects.emplace_back(TmxObject(name, x, y));
+		objects.emplace_back(TmxObject(id, name, { x, y, width, height }));
 	}
+
+	if (objects.empty())
+		return; //FIXME: log this
+	mObjectGroups.emplace_back(TmxObjectGroup(name, std::move(objects)));
 }
 
 bool TmxMap::Load(const std::string& inPath)
@@ -217,7 +229,7 @@ bool TmxMap::Load(const std::string& inPath)
 		std::string_view name(it.name());
 		if      (!name.compare("layer"))       { ReadLayer(it); }
 		else if (!name.compare("tileset"))     { ReadTileset(it); }
-		else if (!name.compare("objectgroup")) { ReadObjects(it); }
+		else if (!name.compare("objectgroup")) { ReadObjectGroup(it); }
 	}
 
 	return true;
