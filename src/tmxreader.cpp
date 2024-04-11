@@ -102,7 +102,8 @@ TmxReader::Error TmxReader::Open(const std::string& inPath,
 				});
 			}
 		}
-		mObjects.emplace(objs);
+		if (!objs.empty())
+			mObjects.emplace(objs);
 	}
 
 	return Error::OK;
