@@ -99,19 +99,18 @@ ArgParse::ParseCtrl ArgParse::ParserState::Next(const std::string_view token)
 		{
 			flagChar = flag.value();
 			const auto opt = getOption(flagChar);
-			if (opt.has_value())
+			if (!opt.has_value())
+				return ParseCtrl::QUIT_ERR_UNKNOWN;
+			bool expect = !opt.value().get().argumentName.empty();
+			if (token.length() <= 2)
 			{
-				bool expect = !opt.value().get().argumentName.empty();
-				if (token.length() <= 2)
-				{
-					expectArg = expect;
-					if (!expectArg)
-						return handler(flagChar, "");
-				}
-				else
-				{
-					return handler(flagChar, expect ? token.substr(2) : "");
-				}
+				expectArg = expect;
+				if (!expectArg)
+					return handler(flagChar, "");
+			}
+			else
+			{
+				return handler(flagChar, expect ? token.substr(2) : "");
 			}
 		}
 		else if (!token.empty())
