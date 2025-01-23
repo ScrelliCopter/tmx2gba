@@ -6,6 +6,7 @@
 
 #include <string>
 #include <string_view>
+#include <cstdint>
 
 // Cut leading & trailing whitespace (including newlines)
 [[nodiscard]] const std::string_view TrimWhitespace(const std::string_view str);

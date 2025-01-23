@@ -7,6 +7,7 @@
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <algorithm>
 
 
 ArgParse::ArgParser::ArgParser(
